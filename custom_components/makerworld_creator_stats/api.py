@@ -55,12 +55,16 @@ class MakerWorldApi:
                 if response.status == 429:
                     raise ApiError("Request limit reached. Try again later")
                 if not 200 <= response.status < 300:
-                    raise ApiError(f"Bambu returned HTTP {response.status}")
-                if response.status == 204 and path == EMAIL_CODE:
+                    raise ApiError(f"Bambu meldet HTTP {response.status}")
+                if path == EMAIL_CODE and not (await response.read()).strip():
                     return {}
-                data = await response.json()
-        except (ClientError, TimeoutError, ValueError):
-            raise ApiError("Connection or response error") from None
+                data = await response.json(content_type=None)
+        except TimeoutError:
+            raise ApiError("Zeitüberschreitung") from None
+        except ClientError:
+            raise ApiError("Verbindungsfehler (Netzwerk oder TLS)") from None
+        except ValueError:
+            raise ApiError("Antwort enthält kein gültiges JSON") from None
         if not isinstance(data, dict):
             raise ApiError("Unexpected response format")
         if data.get("code") not in (None, 0, "0"):

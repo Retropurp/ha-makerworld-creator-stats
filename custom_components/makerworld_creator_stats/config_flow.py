@@ -19,6 +19,7 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         errors = {}
+        detail = ""
         if user_input is not None:
             email = user_input["email"].strip()
             if "@" not in email or len(email) > 254:
@@ -28,7 +29,8 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._api = MakerWorldApi(async_get_clientsession(self.hass))
                 try:
                     await self._api.request_code(email)
-                except ApiError:
+                except ApiError as error:
+                    detail = str(error)
                     errors["base"] = "cannot_connect"
                 else:
                     return await self.async_step_code()
@@ -36,15 +38,18 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema({vol.Required("email", default=self._email): str}),
             errors=errors,
+            description_placeholders={"detail": detail},
         )
 
     async def async_step_code(self, user_input=None):
         errors = {}
+        detail = ""
         if user_input is not None:
             if user_input.get("resend", False):
                 try:
                     await self._api.request_code(self._email)
-                except ApiError:
+                except ApiError as error:
+                    detail = str(error)
                     errors["base"] = "cannot_connect"
             else:
                 try:
@@ -52,7 +57,8 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     profile = await self._api.profile()
                 except (CodeError, AuthError):
                     errors["base"] = "invalid_code"
-                except ApiError:
+                except ApiError as error:
+                    detail = str(error)
                     errors["base"] = "cannot_connect"
                 else:
                     uid = str(profile["uid"])
@@ -78,6 +84,7 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("resend", default=False): bool,
             }),
             errors=errors,
+            description_placeholders={"detail": detail},
         )
 
     async def async_step_reauth(self, entry_data):

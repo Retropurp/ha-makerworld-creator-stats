@@ -20,7 +20,7 @@
     },
     "error": {
       "invalid_email": "Bitte eine gültige E-Mail-Adresse eingeben.",
-      "cannot_connect": "Bambu ist nicht erreichbar, blockiert die Anfrage oder liefert ein unerwartetes Format. Bitte später erneut versuchen.",
+      "cannot_connect": "Anfrage an Bambu fehlgeschlagen. {detail}",
       "invalid_code": "Code ungültig oder abgelaufen. Bitte prüfen oder einen neuen Code anfordern."
     },
     "abort": {
