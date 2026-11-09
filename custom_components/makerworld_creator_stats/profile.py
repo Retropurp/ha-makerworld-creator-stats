@@ -21,6 +21,19 @@ def as_int(value) -> int | None:
         return None
 
 
+def as_number(value) -> int | float | None:
+    """Keep fractional point values and reject invalid numbers."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return number if isfinite(number) else None
+
+
 @dataclass
 class MakerWorldProfile:
     """The subset of the MakerWorld profile response we surface as sensors."""
@@ -38,21 +51,21 @@ class MakerWorldProfile:
     instance_downloads: int | None = None
     design_prints: int | None = None
     instance_prints: int | None = None
-    points_earned: int | None = None
-    points_spent: int | None = None
-    points_earned_exclusive: int | None = None
-    points_spent_exclusive: int | None = None
+    points_earned: int | float | None = None
+    points_spent: int | float | None = None
+    points_earned_exclusive: int | float | None = None
+    points_spent_exclusive: int | float | None = None
     boost_tokens: int | None = None
     boosts_received: int | None = None
     boosts_used: int | None = None
     boosts_expired: int | None = None
     # What the profile reports as the balance outright. The ledger arithmetic
     # below is only used when this is missing (public profile fallback).
-    points_total_reported: int | None = None
-    points_income_total: int | None = None
-    points_expense_total: int | None = None
-    points_reported: int | None = None
-    points_reported_exclusive: int | None = None
+    points_total_reported: int | float | None = None
+    points_income_total: int | float | None = None
+    points_expense_total: int | float | None = None
+    points_reported: int | float | None = None
+    points_reported_exclusive: int | float | None = None
 
     @classmethod
     def from_json(cls, data: dict, points: dict | None = None, boosts: dict | None = None) -> MakerWorldProfile:
@@ -80,16 +93,16 @@ class MakerWorldProfile:
             instance_downloads=as_int(counts.get('myInstanceDownloadCount')),
             design_prints=as_int(counts.get('myDesignPrintCount')),
             instance_prints=as_int(counts.get('myInstancePrintCount')),
-            points_earned=as_int(points.get('totalRegularIncome')),
-            points_spent=as_int(points.get('totalRegularExpense')),
-            points_earned_exclusive=as_int(points.get('totalExclusiveIncome')),
-            points_spent_exclusive=as_int(points.get('totalExclusiveExpense')),
+            points_earned=as_number(points.get('totalRegularIncome')),
+            points_spent=as_number(points.get('totalRegularExpense')),
+            points_earned_exclusive=as_number(points.get('totalExclusiveIncome')),
+            points_spent_exclusive=as_number(points.get('totalExclusiveExpense')),
             boosts_received=as_int(data.get('boostGained')),
-            points_total_reported=as_int(data.get('point')),
-            points_income_total=as_int(points.get('totalIncome')),
-            points_expense_total=as_int(points.get('totalExpense')),
-            points_reported=as_int(data.get('pointRegular')),
-            points_reported_exclusive=as_int(data.get('pointExclusive')),
+            points_total_reported=as_number(data.get('point')),
+            points_income_total=as_number(points.get('totalIncome')),
+            points_expense_total=as_number(points.get('totalExpense')),
+            points_reported=as_number(data.get('pointRegular')),
+            points_reported_exclusive=as_number(data.get('pointExclusive')),
             # 'boost' on the profile and 'availableTotal' on the boost endpoint
             # are the same figure; take whichever answered.
             boost_tokens=as_int(boosts.get('availableTotal')) if boosts.get('availableTotal') is not None else as_int(data.get('boost')),
@@ -98,7 +111,7 @@ class MakerWorldProfile:
         )
 
     @staticmethod
-    def _sum(*values) -> int | None:
+    def _sum(*values) -> int | float | None:
         """Sum the parts only when every part is known."""
         return sum(values) if all(value is not None for value in values) else None
 
@@ -116,7 +129,7 @@ class MakerWorldProfile:
         return self._sum(self.design_prints, self.instance_prints)
 
     @staticmethod
-    def _balance(earned, spent) -> int | None:
+    def _balance(earned, spent) -> int | float | None:
         """A points balance, or None unless both halves are known.
 
         Unlike the download counts, half a balance is a wrong number rather than
@@ -126,7 +139,7 @@ class MakerWorldProfile:
         return earned - spent
 
     @property
-    def points(self) -> int | None:
+    def points(self) -> int | float | None:
         """The balance MakerWorld shows as total points."""
         if self.points_total_reported is not None:
             return self.points_total_reported
@@ -135,13 +148,13 @@ class MakerWorldProfile:
         return self._sum(regular, exclusive)
 
     @property
-    def points_regular(self) -> int | None:
+    def points_regular(self) -> int | float | None:
         if self.points_reported is not None:
             return self.points_reported
         return self._balance(self.points_earned, self.points_spent)
 
     @property
-    def points_exclusive(self) -> int | None:
+    def points_exclusive(self) -> int | float | None:
         if self.points_reported_exclusive is not None:
             return self.points_reported_exclusive
         return self._balance(self.points_earned_exclusive, self.points_spent_exclusive)
