@@ -1,0 +1,32 @@
+{
+  "title": "MakerWorld Creator Stats",
+  "config": {
+    "step": {
+      "user": {
+        "title": "MakerWorld anmelden",
+        "description": "Gib deine Bambu-Konto-E-Mail-Adresse ein. Bambu sendet dir einen Anmeldecode. Unterstützt werden globale Konten auf api.bambulab.com.",
+        "data": {
+          "email": "E-Mail-Adresse"
+        }
+      },
+      "code": {
+        "title": "E-Mail-Code eingeben",
+        "description": "Gib den Code aus deiner Bambu-E-Mail ein. Für einen neuen Code aktiviere das Kontrollkästchen und bestätige. Der Zugangstoken wird lokal in Home Assistant gespeichert.",
+        "data": {
+          "code": "Anmeldecode",
+          "resend": "Neuen Code anfordern"
+        }
+      }
+    },
+    "error": {
+      "invalid_email": "Bitte eine gültige E-Mail-Adresse eingeben.",
+      "cannot_connect": "Bambu ist nicht erreichbar, blockiert die Anfrage oder liefert ein unerwartetes Format. Bitte später erneut versuchen.",
+      "invalid_code": "Code ungültig oder abgelaufen. Bitte prüfen oder einen neuen Code anfordern."
+    },
+    "abort": {
+      "already_configured": "Dieses MakerWorld-Konto ist bereits eingerichtet.",
+      "wrong_account": "Bitte mit demselben Bambu-Konto erneut anmelden.",
+      "reauth_successful": "Anmeldung erneuert."
+    }
+  }
+}
