@@ -1,6 +1,16 @@
 # MakerWorld Creator Stats
 
-Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.1.
+Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.2.
+
+## Abfragehäufigkeit und Schutzpausen
+
+Kontostatistiken werden ungefähr alle 30 Minuten aktualisiert, mit bis zu einer Minute zufälligem Zeitversatz. Der Transaktionsverlauf wird höchstens alle sechs Stunden importiert. Alle darauf basierenden Rechensensoren verwenden diese gemeinsam geladenen Daten und erzeugen keine eigenen API-Abfragen.
+
+Bei erkannter Cloudflare-Sperre pausieren die Statistikabfragen des betroffenen Kontos zunächst zwei Stunden, bei weiteren gesperrten Versuchen vier, acht und höchstens zwölf Stunden. Bei HTTP 429 beginnt die Pause bei 30 Minuten und verdoppelt sich ebenfalls bis maximal zwölf Stunden. Eine längere gültige Retry-After-Servervorgabe kann die Pause auf höchstens 24 Stunden verlängern. Ein zufälliger Zeitversatz von bis zu einer Minute kommt hinzu, ohne das 24-Stunden-Limit zu überschreiten. Diese Zeiten sind unsere vorsichtige Strategie, keine bestätigten Bambu-Grenzwerte oder Freigabeversprechen.
+
+Die Pause samt Fehlerzähler wird ohne Zugangsdaten lokal gespeichert. Neuladen und Home-Assistant-Neustart umgehen eine gespeicherte Pause nicht. Nach Ablauf erfolgt automatisch ein neuer Versuch; nach erfolgreicher Aktualisierung beginnt die normale Frequenz wieder. Auch eine Sperre beim Transaktionsimport hält weitere Statistikabfragen an. Home Assistant zeigt den frühesten Wiederholungszeitpunkt ausdrücklich in UTC an. Während fehlgeschlagener Aktualisierungen sind betroffene Sensoren nicht verfügbar; alte Werte werden nicht als frisch ausgegeben.
+
+Kann eine Pause nicht gespeichert werden, bleibt sie im laufenden Home Assistant aktiv und die Fehlermeldung weist darauf hin. Bei unlesbarem Pausenspeicher starten vorsichtshalber keine Statistikabfragen. Bewusst gestartete Anmeldungen sind von dieser Statistikpause getrennt. Andere Integrationen und Konten können weiter eigene Anfragen erzeugen.
 
 ## Verbindungsfehler verstehen
 
@@ -51,7 +61,7 @@ Alle durch diese Integration ausgelösten HTTP-Anfragen gehen über HTTPS an `ap
 | GET | `/v1/point-service/point-bill/my?offset=0&limit=1&filter=all` | Summen der Punktebewegungen |
 | GET | `/v1/point-service/boost/boostingright` | Boost-Tokens |
 
-Die Abfrage erfolgt alle 15 Minuten. Nach einem Fehler der Profilabfrage steigt der Abstand auf zwei Stunden. Fehler einzelner Zusatzabfragen führen zu nicht verfügbaren Werten für die betroffenen Sensoren. Bei HTTP 401 fordert Home Assistant eine erneute Anmeldung an. Einen neuen Code kannst du im Anmeldedialog ausdrücklich anfordern. Eine abweichende Konto-ID wird bei der erneuten Anmeldung abgewiesen.
+Die Abfrage erfolgt ungefähr alle 30 Minuten. Nach einem sonstigen Fehler der Profilabfrage steigt der Abstand auf zwei Stunden; bei Cloudflare und HTTP 429 gilt die oben beschriebene gespeicherte Schutzpause. Fehler einzelner Zusatzabfragen führen zu nicht verfügbaren Werten für die betroffenen Sensoren. Bei HTTP 401 fordert Home Assistant eine erneute Anmeldung an. Einen neuen Code kannst du im Anmeldedialog ausdrücklich anfordern. Eine abweichende Konto-ID wird bei der erneuten Anmeldung abgewiesen.
 
 Die Anwendung selbst schreibt keine Anmeldeinformationen, API-Antworten oder Tokens in Protokolle. Sensible Werte gehören auch beim Teilen von Home-Assistant-Backups und Fehlerberichten geschützt. Bei manueller Installation erfolgt das Update durch Austausch der Dateien.
 
@@ -91,7 +101,7 @@ Die USD-Anzeige schneidet nach zwei Nachkommastellen ab, entsprechend dem bereit
 
 Für jeweils 7, 14 und 30 Tage gibt es drei weitere Sensoren. Sie zeigen verdiente Punkte, deren Gutschein-Gegenwert nach gewählter Punktebasis und den USD-Gegenwert exklusiver Einnahmen. Als Einnahmen gelten positive Punktebuchungen im Zeitfenster. Ausgaben werden nicht abgezogen. Der Zeitbezug ist der Buchungszeitpunkt aus dem Transaktionsverlauf. Ein Punkteverdienst für einen früheren Leistungstag wird deshalb dem späteren Buchungszeitpunkt zugerechnet.
 
-Der rückwirkende Import nutzt denselben Bambu-Transaktions-Endpunkt wie die vorhandenen Gesamtsummen. Er liest Seiten mit bis zu 100 Buchungen, bis der 30-Tage-Zeitraum abgedeckt oder das Ende erreicht ist. Maximal 50 Seiten und zwei Minuten pro Import sind vorgesehen. Der Abruf erfolgt beim Laden und anschließend höchstens alle sechs Stunden. Die bestehenden Kontosensoren werden weiter alle 15 Minuten abgefragt.
+Der rückwirkende Import nutzt denselben Bambu-Transaktions-Endpunkt wie die vorhandenen Gesamtsummen. Er liest Seiten mit bis zu 100 Buchungen, bis der 30-Tage-Zeitraum abgedeckt oder das Ende erreicht ist. Maximal 50 Seiten und zwei Minuten pro Import sind vorgesehen. Der Abruf erfolgt beim Laden und anschließend höchstens alle sechs Stunden. Die bestehenden Kontosensoren werden ungefähr alle 30 Minuten abgefragt. Gespeicherte Schutzpausen haben Vorrang.
 
 Alle Historienseiten werden zuerst vollständig geprüft und danach gemeinsam übernommen. Bei einem Fehler stehen die neuen Zeitraumwerte auf nicht verfügbar. Die Attribute history_error und history_synced_at geben den bereinigten Fehler und den Zeitpunkt des letzten erfolgreichen Imports an. Der Zeitpunkt wird als Unix-Zeitstempel angegeben. Die minimalen Historienwerte mit Buchungszeit und Punktebeträgen werden lokal im Home-Assistant-Speicher zwischengespeichert. Ein Neustart übernimmt den Cache und den verbleibenden Sechs-Stunden-Abstand. Zugangsdaten und Modellnamen werden in diesem Cache nicht gespeichert.
 

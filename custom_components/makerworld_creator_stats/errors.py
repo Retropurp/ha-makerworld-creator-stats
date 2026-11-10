@@ -1,10 +1,17 @@
 """Classify failures without retaining server bodies or credentials."""
 
 import json
+import time
+
+from .backoff import retry_after_seconds
 
 
 class ApiError(Exception):
     """A safe, locally generated error message."""
+
+    def __init__(self, message, *, retry_after=0):
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class AuthError(ApiError):
@@ -36,12 +43,14 @@ def classify_denial(status, headers, body, endpoint):
     # endpoint is supplied by our fixed allowlist, never by the response.
     if status == 429:
         return RateLimitError(
-            f"{endpoint}: Anfragebegrenzung (HTTP 429). Später erneut versuchen."
+            f"{endpoint}: Anfragebegrenzung (HTTP 429). Später erneut versuchen.",
+            retry_after=retry_after_seconds(headers.get("retry-after"), time.time()),
         )
     if cloudflare:
         return CloudflareError(
             f"{endpoint}: Cloudflare-Schutzprüfung oder Zugriffssperre erkannt "
-            "(HTTP 403). Später erneut versuchen; ein neues Passwort ist dadurch nicht erforderlich."
+            "(HTTP 403). Später erneut versuchen; ein neues Passwort ist dadurch nicht erforderlich.",
+            retry_after=retry_after_seconds(headers.get("retry-after"), time.time()),
         )
     try:
         data = json.loads(text)

@@ -1,9 +1,15 @@
 """Failure classification must neither guess a ban nor leak response details."""
 
 import unittest
-from test_rewards import load
+import importlib
+import sys
+import types
+from test_rewards import COMPONENT
 
-errors = load("errors")
+package = types.ModuleType("error_test_package")
+package.__path__ = [str(COMPONENT)]
+sys.modules[package.__name__] = package
+errors = importlib.import_module("error_test_package.errors")
 
 
 class ErrorTests(unittest.TestCase):
@@ -34,6 +40,12 @@ class ErrorTests(unittest.TestCase):
 
     def test_throttling_remains_distinct(self):
         self.assertIsInstance(self.classify(status=429, body=b"<html>cloudflare"), errors.RateLimitError)
+
+    def test_retry_after_attached_to_denials(self):
+        result = self.classify(status=429, headers={"Retry-After": "10000"})
+        self.assertEqual(result.retry_after, 10000)
+        result = self.classify(headers={"CF-Mitigated": "challenge", "Retry-After": "9000"})
+        self.assertEqual(result.retry_after, 9000)
 
     def test_response_secrets_never_in_error(self):
         result = self.classify(body=b'{"token":"secret-token","email":"private@example.test"}')
