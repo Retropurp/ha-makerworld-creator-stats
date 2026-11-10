@@ -1,6 +1,12 @@
 # MakerWorld Creator Stats
 
-Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.0.
+Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.1.
+
+## Verbindungsfehler verstehen
+
+Ab Version 0.4.1 nennt eine abgewiesene Anfrage auch den betroffenen Bereich, beispielsweise Kontoprofil oder Transaktionsverlauf. Die Erkennung unterscheidet eine ausdrücklich erkennbare Cloudflare-Schutzseite, ein fehlendes CSRF-Cookie, HTTP 429 (Anfragebegrenzung) und einen nicht näher erklärbaren HTTP 403. Ein Cloudflare-Serverheader allein beweist keine Sperre. Antworttexte, Cookies und Zugangsdaten werden nicht in Fehlermeldungen übernommen; zur Einordnung wird höchstens ein 8-KiB-Antwortpräfix geprüft.
+
+Eine erkannte Schutzprüfung wird dadurch nicht aufgehoben. Es gibt keine bestätigte allgemeine Wartezeit bis zur Freigabe. Bei Schutzsperren nicht ständig neu laden oder neue Anmeldecodes anfordern. Bei eindeutig abgewiesenem Zugangstoken (HTTP 401) fordert Home Assistant eine erneute Anmeldung an. Weitere Hinweise und Quellen: [Untersuchung der Bambu-Fehlerberichte](docs/bambu-api-errors.md).
 
 ## Installation über HACS
 

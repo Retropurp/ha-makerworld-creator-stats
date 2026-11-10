@@ -6,6 +6,9 @@ import json
 
 from .const import BASE_URL, BOOSTS, EMAIL_CODE, LOGIN, POINTS, PROFILE
 from .transactions import DAY, TransactionError, parse_transaction
+from .errors import (
+    ApiError, AuthError, CodeError, CloudflareError, RateLimitError, classify_denial,
+)
 
 HISTORY_PATH = "/v1/point-service/point-bill/my"
 
@@ -14,18 +17,6 @@ def history_path(offset):
     if isinstance(offset, bool) or not isinstance(offset, int) or not 0 <= offset < 5000:
         raise ApiError("Invalid history offset")
     return f"{HISTORY_PATH}?offset={offset}&limit=100&filter=all"
-
-
-class ApiError(Exception):
-    """An API request failed. Never include response bodies or credentials."""
-
-
-class AuthError(ApiError):
-    """The access token has expired or was rejected."""
-
-
-class CodeError(ApiError):
-    """The email code was rejected or expired."""
 
 
 class MakerWorldApi:
@@ -64,8 +55,16 @@ class MakerWorldApi:
                     raise AuthError("Authentication required")
                 if response.status == 400 and path == LOGIN:
                     raise CodeError("Request a new code or check the code")
-                if response.status == 429:
-                    raise ApiError("Request limit reached. Try again later")
+                if response.status in (403, 429):
+                    labels = {
+                        EMAIL_CODE: "Anmeldecode anfordern", LOGIN: "Anmeldung",
+                        PROFILE: "Kontoprofil", POINTS: "Punktestand", BOOSTS: "Boosts",
+                    }
+                    prefix = await response.content.read(8192)
+                    raise classify_denial(
+                        response.status, response.headers, prefix,
+                        labels.get(path, "Transaktionsverlauf"),
+                    )
                 if not 200 <= response.status < 300:
                     raise ApiError(f"Bambu meldet HTTP {response.status}")
                 if path == EMAIL_CODE and not (await response.read()).strip():
@@ -104,7 +103,7 @@ class MakerWorldApi:
     async def optional_stats(self, path: str) -> dict:
         try:
             return await self._request(path)
-        except AuthError:
+        except (AuthError, CloudflareError, RateLimitError):
             raise
         except ApiError:
             # Fresh missing values replace old values on a partial failure.
