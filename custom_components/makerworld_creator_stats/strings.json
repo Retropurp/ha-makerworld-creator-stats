@@ -33,7 +33,7 @@
     "step": {
       "init": {
         "title": "Guthaben-Gutscheine konfigurieren",
-        "description": "Wähle deinen Bambu-Shop und die Punktebasis. Regionalvorlagen sind experimentelle Community-Angaben aus April 2026. Für ASIA bitte Shop und USD prüfen. Für China ist in der Quelle kein Guthaben-Angebot belegt.",
+        "description": "Wähle deinen Bambu-Shop und die Punktebasis. EU mit 40 EUR für 524 Punkte wurde am 10. November 2026 vom Nutzer im Shop bestätigt. Weitere Regionalvorlagen sind experimentelle Community-Angaben aus April 2026. Für ASIA bitte Shop und USD prüfen. Für China ist in der Quelle kein Guthaben-Angebot belegt.",
         "data": {
           "shop_region": "Shopregion",
           "points_basis": "Punkte für die Berechnung"

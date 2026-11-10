@@ -1,6 +1,6 @@
 """Regional gift-card estimates based on explicitly selected terms."""
 
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_DOWN, ROUND_HALF_UP
 
 SOURCE = "https://forum.bambulab.com/t/live-stats-app-for-makerworld-models-analytics/246976/40"
 SOURCE_DATE = "2026-04-10"
@@ -17,7 +17,7 @@ PRESETS = {
 }
 REGIONS = {
     "unset": "Bitte Shop wählen",
-    "eu": "EU · EUR · experimentell",
+    "eu": "EU · EUR · 40 € / 524 Punkte · bestätigt",
     "us": "USA · USD · experimentell",
     "uk": "Vereinigtes Königreich · GBP · experimentell",
     "ca": "Kanada · CAD · experimentell",
@@ -37,6 +37,18 @@ REWARD_SENSORS = (
     ("reward_missing", "Punkte bis zum nächsten Gutschein", "mdi:target", "points"),
     ("reward_progress", "Fortschritt zum nächsten Gutschein", "mdi:progress-clock", "percent"),
 )
+CASH_SOURCE = "https://blog.bambulab.com/exclusive-model-program-cash-rewards-and-copyright-support/"
+CASH_RATE = Decimal("0.066")
+CASH_MIN = Decimal("100")
+CASH_MAX = Decimal("1000")
+CASH_SENSORS = (
+    ("cash_balance_value", "Exklusive Punkte USD-Gegenwert", "mdi:currency-usd", "cash"),
+    ("cash_earned_value", "Verdiente exklusive Punkte USD-Gegenwert", "mdi:cash-plus", "cash"),
+    ("cash_claimable", "Rechnerisch beantragbare Auszahlung", "mdi:cash-check", "cash"),
+    ("cash_missing_usd", "USD bis zur Mindestauszahlung", "mdi:target", "cash"),
+    ("cash_missing_points", "Punkte bis zur Mindestauszahlung", "mdi:target", "points"),
+    ("cash_progress", "Fortschritt zur Mindestauszahlung", "mdi:progress-clock", "percent"),
+)
 
 
 def number(value):
@@ -48,6 +60,31 @@ def number(value):
     except (InvalidOperation, ValueError):
         return None
     return result if result.is_finite() and result >= 0 else None
+
+
+def cash_values(profile):
+    """Separate USD cash estimates, capped by the available total balance."""
+    result = {}
+    exclusive = number(profile.points_exclusive)
+    earned = number(profile.points_earned_exclusive)
+    total = number(profile.points)
+    if earned is not None:
+        result["cash_earned_value"] = float((earned * CASH_RATE).quantize(Decimal("0.01"), rounding=ROUND_DOWN))
+    if exclusive is None:
+        return result
+    result["cash_balance_value"] = float((exclusive * CASH_RATE).quantize(Decimal("0.01"), rounding=ROUND_DOWN))
+    if total is None:
+        return result
+    eligible = min(exclusive, total)
+    value = eligible * CASH_RATE
+    missing = max(Decimal(0), CASH_MIN / CASH_RATE - eligible)
+    result.update(
+        cash_claimable=float(min(value, CASH_MAX).quantize(Decimal("0.01"), rounding=ROUND_DOWN)) if value >= CASH_MIN else 0,
+        cash_missing_usd=float(max(Decimal(0), CASH_MIN - value).quantize(Decimal("0.01"), rounding=ROUND_CEILING)),
+        cash_missing_points=float(missing.quantize(Decimal("0.001"), rounding=ROUND_CEILING)),
+        cash_progress=float(min(Decimal(100), value / CASH_MIN * 100)),
+    )
+    return result
 
 
 def reward_values(profile, options):

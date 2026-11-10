@@ -1,6 +1,6 @@
 # MakerWorld Creator Stats
 
-Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.1.0, erste lokal geprüfte Fassung.
+Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.3.0.
 
 ## Installation über HACS
 
@@ -66,7 +66,7 @@ Hinweise zur übernommenen Datenverarbeitung stehen in `THIRD_PARTY.md`.
 
 Nach der Installation unter **Einstellungen → Geräte & Dienste → MakerWorld Creator Stats → Konfigurieren** die Shopregion und Punktebasis auswählen. Bei vorhandenen Installationen ist zunächst kein Shop ausgewählt. Die sechs zusätzlichen Rechensensoren werden verfügbar, sobald eine gültige Konfiguration vorliegt. Änderungen wirken direkt auf die Sensoren.
 
-Die Vorlagen für EU, USA, Großbritannien, Kanada, Australien, Japan, ASIA und Südkorea sind experimentelle Community-Angaben vom 10. April 2026. Währung, Guthaben und Punktekosten vor dem Speichern mit dem eigenen Punkteshop vergleichen. Alle Werte sind überschreibbar. Benutzerdefinierte Angebote sind ebenfalls möglich. Für China ist in dieser Quelle kein Guthaben-Angebot belegt.
+Die EU-Vorlage mit 40 EUR für 524 Punkte wurde am 10. November 2026 durch den Nutzer im Shop bestätigt. Die weiteren Vorlagen sind experimentelle Community-Angaben vom 10. April 2026. Währung, Guthaben und Punktekosten vor dem Speichern mit dem eigenen Punkteshop vergleichen. Alle Werte sind überschreibbar. Benutzerdefinierte Angebote sind ebenfalls möglich. Für China ist in dieser Quelle kein Guthaben-Angebot belegt.
 
 Die sechs Sensoren zeigen den rechnerischen Gegenwert des aktuellen Punktekontos und der bisher verdienten Punkte, die finanzierbare ganze Gutscheinanzahl, deren Guthaben, fehlende Punkte und den Fortschritt zum nächsten Gutschein. Die Punktebasis ist wahlweise regulär oder regulär plus exklusiv. Die Auswahl gilt für beide Gegenwerte.
 
@@ -75,3 +75,20 @@ Guthabenwerte werden zum konfigurierten Kurs berechnet. Einlösbarkeit, Bestand 
 Die Sensoren benötigen keine zusätzlichen Bambu-Abfragen. Die Punktebasis, die gewählten Konditionen und der Quellenstand stehen in den Sensorattributen. Für die Rechensensoren ist keine Langzeitstatistikklasse gesetzt, damit ein späterer Wechsel der Währung oder des Kurses keine vermischten Geldstatistiken erzeugt. Die normale Zustandshistorie hängt vom Recorder ab.
 
 [Quellen und regionale Vorlagen](docs/forum-findings-and-reward-values.md)
+
+
+## USD-Auszahlung und Einnahmen ab 0.3.0
+
+Sechs zusätzliche USD-Sensoren zeigen den Gegenwert exklusiver Punkte, den USD-Gegenwert der bisher verdienten exklusiven Punkte, den rechnerisch beantragbaren Betrag, fehlende USD und Punkte sowie den Fortschritt zur Mindestauszahlung. Es gelten 0,066 USD je exklusivem Punkt, mindestens 100 USD und höchstens 1.000 USD pro Antrag. Der verfügbare exklusive Betrag wird zusätzlich durch den Gesamtpunktestand begrenzt. Die im Profil gezeigten Bedingungen wurden am 10. November 2026 vom Nutzer bestätigt. Der tatsächliche Antrag unterliegt einer Prüfung durch MakerWorld.
+
+Die USD-Anzeige schneidet nach zwei Nachkommastellen ab, entsprechend dem bereitgestellten Profil-Screenshot. Die Mindestschwelle wird mit dem ungekürzten Betrag geprüft. Fehlende Punkte werden auf drei Nachkommastellen aufgerundet. Diese Berechnung nimmt keine Auszahlung vor.
+
+Für jeweils 7, 14 und 30 Tage gibt es drei weitere Sensoren. Sie zeigen verdiente Punkte, deren Gutschein-Gegenwert nach gewählter Punktebasis und den USD-Gegenwert exklusiver Einnahmen. Als Einnahmen gelten positive Punktebuchungen im Zeitfenster. Ausgaben werden nicht abgezogen. Der Zeitbezug ist der Buchungszeitpunkt aus dem Transaktionsverlauf. Ein Punkteverdienst für einen früheren Leistungstag wird deshalb dem späteren Buchungszeitpunkt zugerechnet.
+
+Der rückwirkende Import nutzt denselben Bambu-Transaktions-Endpunkt wie die vorhandenen Gesamtsummen. Er liest Seiten mit bis zu 100 Buchungen, bis der 30-Tage-Zeitraum abgedeckt oder das Ende erreicht ist. Maximal 50 Seiten und zwei Minuten pro Import sind vorgesehen. Der Abruf erfolgt beim Laden und anschließend höchstens alle sechs Stunden. Die bestehenden Kontosensoren werden weiter alle 15 Minuten abgefragt.
+
+Alle Historienseiten werden zuerst vollständig geprüft und danach gemeinsam übernommen. Bei einem Fehler stehen die neuen Zeitraumwerte auf nicht verfügbar. Die Attribute history_error und history_synced_at geben den bereinigten Fehler und den Zeitpunkt des letzten erfolgreichen Imports an. Der Zeitpunkt wird als Unix-Zeitstempel angegeben. Die minimalen Historienwerte mit Buchungszeit und Punktebeträgen werden lokal im Home-Assistant-Speicher zwischengespeichert. Ein Neustart übernimmt den Cache und den verbleibenden Sechs-Stunden-Abstand. Zugangsdaten und Modellnamen werden in diesem Cache nicht gespeichert.
+
+Der Verlauf im angemeldeten Browser zeigte datierte Gutschriften einschließlich exklusiver Punkte. Der automatisierte Import mit dem Home-Assistant-Token muss noch live bestätigt werden. Bei abweichender Antwortstruktur erfolgt eine Fehlermeldung und keine Schätzung aus dem Kontostand. Insbesondere werden unbekannte Punkteaufteilungen nicht als Null ausgegeben.
+
+Die neuen Sensoren eignen sich für Dashboard-Anzeigen und die normale Zustandshistorie. Für die abgeleiteten Sensoren werden keine Langzeitstatistiken eingerichtet. Ein Kurs- oder Punktebasiswechsel berechnet den angezeigten Gegenwert neu. Er beschreibt damit den Gegenwert zum aktuell eingestellten Kurs.

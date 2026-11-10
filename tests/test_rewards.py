@@ -100,6 +100,38 @@ class RewardTests(unittest.TestCase):
         for value in (-1, True, float("inf"), "nan", "bad"):
             self.assertEqual(self.values(value), {})
 
+    def test_cash_screenshot(self):
+        p = profile.MakerWorldProfile(points_reported_exclusive=522.547, points_total_reported=544)
+        values = rewards.cash_values(p)
+        self.assertEqual(values["cash_balance_value"], 34.48)
+        self.assertEqual(values["cash_missing_points"], 992.605)
+        self.assertEqual(values["cash_claimable"], 0)
+
+    def test_cash_minimum_uses_unrounded_amount(self):
+        for points, eligible in ((1515.151, False), (1515.152, True)):
+            p = profile.MakerWorldProfile(points_reported_exclusive=points, points_total_reported=points)
+            self.assertEqual(rewards.cash_values(p)["cash_claimable"] > 0, eligible)
+
+    def test_cash_cap(self):
+        p = profile.MakerWorldProfile(points_reported_exclusive=20000, points_total_reported=20000)
+        self.assertEqual(rewards.cash_values(p)["cash_claimable"], 1000)
+
+    def test_cash_limited_by_total_balance(self):
+        p = profile.MakerWorldProfile(points_reported_exclusive=2000, points_total_reported=1000)
+        values = rewards.cash_values(p)
+        self.assertEqual(values["cash_balance_value"], 132)
+        self.assertEqual(values["cash_claimable"], 0)
+        self.assertEqual(values["cash_missing_usd"], 34)
+
+    def test_cash_earned_value(self):
+        p = profile.MakerWorldProfile(points_earned_exclusive=11180.547)
+        self.assertEqual(rewards.cash_values(p), {"cash_earned_value": 737.91})
+
+    def test_cash_zero_and_missing(self):
+        p = profile.MakerWorldProfile(points_reported_exclusive=0, points_total_reported=0)
+        self.assertEqual(rewards.cash_values(p)["cash_missing_usd"], 100)
+        self.assertEqual(rewards.cash_values(profile.MakerWorldProfile()), {})
+
 
 if __name__ == "__main__":
     unittest.main()
