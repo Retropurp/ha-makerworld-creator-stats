@@ -32,20 +32,27 @@
   "options": {
     "step": {
       "init": {
-        "title": "Guthaben-Gutscheine konfigurieren",
-        "description": "Wähle deinen Bambu-Shop und die Punktebasis. EU mit 40 EUR für 524 Punkte wurde am 10. November 2026 vom Nutzer im Shop bestätigt. Weitere Regionalvorlagen sind experimentelle Community-Angaben aus April 2026. Für ASIA bitte Shop und USD prüfen. Für China ist in der Quelle kein Guthaben-Angebot belegt.",
+        "title": "Sensorgruppen auswählen",
+        "description": "Gutscheine zeigen den Wert deiner Punkte als Bambu-Shop-Guthaben. USD-Auszahlung rechnet exklusive Punkte zum Bargeld-Gegenwert mit einer Mindestgrenze von 100 USD um. Die Auswahl umfasst auch die jeweiligen 7-, 14- und 30-Tage-Gegenwerte. Abgewählte Gruppen werden aus der Entitätenliste entfernt. Selbst angelegte Dashboard-Karten mit diesen Entitäten müssen dann angepasst werden. Die allgemeinen Konto- und Punktesensoren sind weiter verfügbar.",
         "data": {
-          "shop_region": "Shopregion",
-          "points_basis": "Punkte für die Berechnung"
+          "sensor_view": "Welche Rechensensoren möchtest du verwenden?"
         }
       },
       "terms": {
         "title": "Guthaben-Angebot bestätigen",
-        "description": "Bitte mit deinem Punkteshop vergleichen und bei Bedarf anpassen. Nur Guthaben-Gutscheine eintragen. Währung als ISO-Code (z. B. EUR), Beträge mit Dezimalpunkt eingeben. Die Sensoren zeigen rechnerische Gegenwerte. Einlösbarkeit und Verfügbarkeit werden nicht abgefragt.",
+        "description": "Prüfe den Gutschein-Kurs im Punkteshop. Beispiel EU: Währung EUR, Guthaben 40 und Kosten 524 Punkte. Hier geht es um Guthaben-Gutscheine. Beträge mit Dezimalpunkt eingeben. Anteiliges Guthaben ist ein Rechenwert. Ganze Gutscheine werden abgerundet gezählt. Shopbestand und Einlösbarkeit prüft die Integration nicht.",
         "data": {
           "currency": "Währung (ISO-Code)",
           "card_value": "Guthaben je Gutschein",
           "card_points": "Punkte je Gutschein"
+        }
+      },
+      "shop": {
+        "title": "Guthaben-Gutscheine konfigurieren",
+        "description": "Wähle den Bambu-Shop für Guthaben-Gutscheine. Die Punktebasis gilt für Gutscheinwerte und Punkte-Einnahmen. Regulär plus exklusiv verwendet beide Punktetypen für die Gutscheinrechnung. Die separate USD-Auszahlung verwendet stets exklusive Punkte. EU mit 40 EUR für 524 Punkte wurde am 10. November 2026 im Shop bestätigt. Weitere Vorlagen sind experimentell.",
+        "data": {
+          "shop_region": "Shopregion",
+          "points_basis": "Punkte für die Berechnung"
         }
       }
     },

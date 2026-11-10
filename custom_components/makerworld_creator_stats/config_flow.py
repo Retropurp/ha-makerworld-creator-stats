@@ -12,6 +12,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import ApiError, AuthError, CodeError, MakerWorldApi
 from .const import DOMAIN
 from .rewards import BASES, PRESETS, REGIONS, number
+from .presentation import VIEWS
 
 
 class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -109,6 +110,24 @@ class RewardsOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         if user_input is not None:
+            self._settings.update(user_input)
+            if user_input["sensor_view"] == "cash":
+                return self.async_create_entry(title="", data=self._settings)
+            return await self.async_step_shop()
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Required("sensor_view", default=self._settings.get("sensor_view", "both")): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[{"value": key, "label": label} for key, label in VIEWS.items()],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+            }),
+        )
+
+    async def async_step_shop(self, user_input=None):
+        if user_input is not None:
             region = user_input["shop_region"]
             changed = region != self._settings.get("shop_region")
             self._settings.update(user_input)
@@ -119,7 +138,7 @@ class RewardsOptionsFlow(config_entries.OptionsFlow):
                 self._settings.update(currency=currency, card_value=value, card_points=points)
             return await self.async_step_terms()
         return self.async_show_form(
-            step_id="init",
+            step_id="shop",
             data_schema=vol.Schema({
                 vol.Required("shop_region", default=self._settings.get("shop_region", "unset")): selector.SelectSelector(
                     selector.SelectSelectorConfig(

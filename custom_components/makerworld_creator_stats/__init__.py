@@ -21,8 +21,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    entry.runtime_data.reward_options = dict(entry.options)
-    entry.runtime_data.async_update_listeners()
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

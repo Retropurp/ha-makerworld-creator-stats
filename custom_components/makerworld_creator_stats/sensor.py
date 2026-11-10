@@ -6,14 +6,44 @@ import time
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription, SensorStateClass
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .profile import MakerWorldProfile
 from .transactions import HISTORY_INTERVAL, income_in_window
+from .presentation import sensor_group, show_sensor
 from .rewards import (
     CASH_MAX, CASH_MIN, CASH_RATE, CASH_SENSORS, CASH_SOURCE,
     PRESETS, REWARD_SENSORS, SOURCE, SOURCE_DATE, cash_values, number, reward_values,
 )
+
+POINT_DESCRIPTIONS = {
+    "points": "Aktueller Gesamtpunktestand laut MakerWorld. Bereits ausgegebene Punkte sind darin berücksichtigt.",
+    "points_regular": "Aktuell vorhandene reguläre Punkte auf deinem MakerWorld-Konto.",
+    "points_exclusive": "Aktuell vorhandene exklusive Punkte. Deren USD-Gegenwert und die Auszahlungsgrenzen stehen in der Gruppe USD-Auszahlung.",
+    "points_earned": "Summe der bisher gutgeschriebenen regulären Punkte laut Transaktionssummen. Einlösungen vermindern diesen Gesamtverdienst nicht.",
+    "points_earned_exclusive": "Summe der bisher gutgeschriebenen exklusiven Punkte laut Transaktionssummen.",
+    "points_spent": "Summe der bisher ausgegebenen regulären Punkte laut MakerWorld.",
+    "points_spent_exclusive": "Summe der bisher ausgegebenen exklusiven Punkte laut MakerWorld.",
+    "points_income_total": "Bisher gutgeschriebene reguläre und exklusive Punkte zusammen. Die Sensoren für 7, 14 und 30 Tage betrachten dagegen ein begrenztes Buchungszeitfenster.",
+    "points_expense_total": "Bisher ausgegebene reguläre und exklusive Punkte zusammen.",
+}
+GIFT_DESCRIPTIONS = {
+    "reward_balance_value": "Anteilig umgerechneter Wert des aktuellen Punktestands nach gewählter Gutschein-Punktebasis und Shopkurs. Beispiel: 800 Punkte entsprechen bei 40 EUR für 524 Punkte rechnerisch 61,07 EUR.",
+    "reward_earned_value": "Bisher insgesamt verdiente Punkte der gewählten Punktebasis, umgerechnet zum aktuellen Gutschein-Kurs. Dieser Wert enthält auch inzwischen ausgegebene Punkte.",
+    "reward_cards": "Anzahl vollständiger Guthaben-Gutscheine, die der aktuelle Punktestand rechnerisch finanziert. Beispiel: 800 Punkte reichen bei 524 Punkten je Gutschein für einen Gutschein.",
+    "reward_credit": "Guthaben der rechnerisch finanzierbaren ganzen Gutscheine. Beispiel: Ein Gutschein zu 40 EUR ergibt 40 EUR Guthaben. Restpunkte zählen erst beim nächsten vollständigen Gutschein.",
+    "reward_missing": "Zusätzlich benötigte Punkte bis zu einem weiteren vollständigen Gutschein. Bei einer genau erreichten Schwelle beginnt die Zählung für den folgenden Gutschein.",
+    "reward_progress": "Fortschritt der Restpunkte zum nächsten vollständigen Gutschein in Prozent. Nach Erreichen eines Gutscheins beginnt die Anzeige wieder bei null.",
+}
+CASH_DESCRIPTIONS = {
+    "cash_balance_value": "Aktuell vorhandene exklusive Punkte × 0,066 USD. Dieser Gegenwert kann auch unter der Mindestgrenze von 100 USD liegen.",
+    "cash_earned_value": "Bisher insgesamt verdiente exklusive Punkte × 0,066 USD. Einschließlich inzwischen ausgegebener Punkte. Der Wert beschreibt den Gesamtverdienst als Gegenwert.",
+    "cash_claimable": "Rechnerisch beantragbarer Betrag aus den vorhandenen exklusiven Punkten, begrenzt durch den Gesamtpunktestand. Unter 100 USD beträgt er null, pro Antrag höchstens 1.000 USD. MakerWorld prüft den Antrag.",
+    "cash_missing_usd": "Fehlender USD-Gegenwert bis zum Mindestantrag von 100 USD, unter Berücksichtigung des Gesamtpunktestands.",
+    "cash_missing_points": "Zusätzlich benötigte Punkte bis zum Mindestantrag von 100 USD. Der Wert wird auf drei Nachkommastellen aufgerundet.",
+    "cash_progress": "Fortschritt zur Mindestgrenze von 100 USD, unter Berücksichtigung des Gesamtpunktestands. Die Anzeige endet bei 100 Prozent.",
+}
 
 
 # Snapshot values can decrease when models or activity are removed.
@@ -30,13 +60,13 @@ SENSORS = (
     ("followers", "Follower", "mdi:account-group"),
     ("following", "Gefolgte Konten", "mdi:account-multiple-plus"),
     ("level", "Level", "mdi:trophy-outline"),
-    ("points", "Punkte gesamt", "mdi:cash-multiple"),
-    ("points_regular", "Reguläre Punkte", "mdi:cash"),
-    ("points_exclusive", "Exklusive Punkte", "mdi:cash"),
-    ("points_earned", "Reguläre Punkte verdient", "mdi:cash-plus"),
-    ("points_spent", "Reguläre Punkte ausgegeben", "mdi:cash-minus"),
-    ("points_earned_exclusive", "Exklusive Punkte verdient", "mdi:cash-plus"),
-    ("points_spent_exclusive", "Exklusive Punkte ausgegeben", "mdi:cash-minus"),
+    ("points", "Punkte – Kontostand gesamt", "mdi:cash-multiple"),
+    ("points_regular", "Reguläre Punkte – Kontostand", "mdi:cash"),
+    ("points_exclusive", "Exklusive Punkte – Kontostand", "mdi:cash"),
+    ("points_earned", "Reguläre Punkte – Insgesamt verdient", "mdi:cash-plus"),
+    ("points_spent", "Reguläre Punkte – Insgesamt ausgegeben", "mdi:cash-minus"),
+    ("points_earned_exclusive", "Exklusive Punkte – Insgesamt verdient", "mdi:cash-plus"),
+    ("points_spent_exclusive", "Exklusive Punkte – Insgesamt ausgegeben", "mdi:cash-minus"),
     ("points_income_total", "Punkte insgesamt verdient", "mdi:cash-plus"),
     ("points_expense_total", "Punkte insgesamt ausgegeben", "mdi:cash-minus"),
     ("boosts_received", "Boosts erhalten", "mdi:rocket-launch-outline"),
@@ -47,6 +77,14 @@ SENSORS = (
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
+    registry = er.async_get(hass)
+    prefix = f"{entry.runtime_data.account_id}_"
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.platform != DOMAIN or not entity.unique_id.startswith(prefix):
+            continue
+        key = entity.unique_id[len(prefix):]
+        if sensor_group(key) and not show_sensor(key, entry.options):
+            registry.async_remove(entity.entity_id)
     async_add_entities(
         MakerWorldSensor(
             entry.runtime_data,
@@ -60,11 +98,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(
         MakerWorldRewardSensor(entry.runtime_data, key, name, icon, kind)
         for key, name, icon, kind in (*REWARD_SENSORS, *CASH_SENSORS)
+        if show_sensor(key, entry.options)
     )
     async_add_entities(
         MakerWorldIncomeSensor(entry.runtime_data, days, kind)
         for days in (7, 14, 30)
         for kind in ("points", "money", "cash")
+        if show_sensor(f"income_{kind}_{days}d", entry.options)
     )
 
 
@@ -89,6 +129,12 @@ class MakerWorldSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         return getattr(self.coordinator.data, self.entity_description.key, None)
+
+    @property
+    def extra_state_attributes(self):
+        key = self.entity_description.key
+        description = POINT_DESCRIPTIONS.get(key)
+        return {"beschreibung": description} if description else {}
 
 
 class MakerWorldRewardSensor(MakerWorldSensor):
@@ -116,6 +162,7 @@ class MakerWorldRewardSensor(MakerWorldSensor):
     def extra_state_attributes(self):
         if self.entity_description.key.startswith("cash_"):
             return {
+                "beschreibung": CASH_DESCRIPTIONS[self.entity_description.key],
                 "usd_per_exclusive_point": float(CASH_RATE),
                 "minimum_usd": float(CASH_MIN),
                 "maximum_usd_per_request": float(CASH_MAX),
@@ -139,6 +186,7 @@ class MakerWorldRewardSensor(MakerWorldSensor):
         if preset and not modified:
             rate_status = "user_confirmed" if options.get("shop_region") == "eu" else "experimental"
         return {
+            "beschreibung": GIFT_DESCRIPTIONS.get(self.entity_description.key),
             "rate_modified": modified,
             "shop_region": options.get("shop_region", "unset"),
             "points_basis": options.get("points_basis", "regular"),
@@ -157,10 +205,15 @@ class MakerWorldIncomeSensor(MakerWorldRewardSensor):
     """Rolling income by booking timestamp, with cash and gift-card estimates."""
 
     def __init__(self, coordinator, days, kind):
+        basis_name = "regulär"
+        if coordinator.reward_options.get("sensor_view") == "cash":
+            basis_name = "exklusiv"
+        elif coordinator.reward_options.get("points_basis") == "combined":
+            basis_name = "gesamt"
         names = {
-            "points": "Punkte-Einnahmen",
-            "money": "Einnahmen Gutschein-Gegenwert",
-            "cash": "Exklusive Einnahmen USD-Gegenwert",
+            "points": f"Punkte {basis_name} – Einnahmen",
+            "money": "Gutscheine – Einnahmen-Gegenwert",
+            "cash": "USD-Auszahlung – Einnahmen-Gegenwert",
         }
         super().__init__(coordinator, f"income_{kind}_{days}d", f"{names[kind]} {days} Tage", "mdi:chart-line", kind)
         self._days = days
@@ -171,7 +224,7 @@ class MakerWorldIncomeSensor(MakerWorldRewardSensor):
         if coordinator.income_events is None or coordinator.history_error or time.time() - coordinator.history_synced_at > HISTORY_INTERVAL * 2:
             return None
         basis = coordinator.reward_options.get("points_basis", "regular")
-        if self._kind == "cash":
+        if self._kind == "cash" or coordinator.reward_options.get("sensor_view") == "cash":
             basis = "exclusive"
         points = income_in_window(coordinator.income_events, basis, self._days, time.time())
         if points is None:
@@ -189,6 +242,9 @@ class MakerWorldIncomeSensor(MakerWorldRewardSensor):
         if self._kind == "cash":
             attributes.update(currency="USD", usd_per_exclusive_point=float(CASH_RATE), points_basis="exclusive")
         attributes.update(
+            beschreibung="Positive Punktegutschriften nach Buchungszeitpunkt in den letzten "
+                f"{self._days} × 24 Stunden. Ausgaben werden nicht abgezogen. "
+                "Geldwerte sind zum aktuellen Kurs umgerechnete Gegenwerte. Aktualisierung alle sechs Stunden.",
             window_days=self._days,
             time_basis="transaction_booking_timestamp",
             history_synced_at=self.coordinator.history_synced_at or None,
@@ -197,4 +253,6 @@ class MakerWorldIncomeSensor(MakerWorldRewardSensor):
             history_cache_persisted=self.coordinator.history_persisted,
             availability_checked=False,
         )
+        if self.coordinator.reward_options.get("sensor_view") == "cash":
+            attributes["points_basis"] = "exclusive"
         return attributes

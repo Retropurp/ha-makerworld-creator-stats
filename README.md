@@ -1,6 +1,6 @@
 # MakerWorld Creator Stats
 
-Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.3.0.
+Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.0.
 
 ## Installation über HACS
 
@@ -92,3 +92,37 @@ Alle Historienseiten werden zuerst vollständig geprüft und danach gemeinsam ü
 Der Verlauf im angemeldeten Browser zeigte datierte Gutschriften einschließlich exklusiver Punkte. Der automatisierte Import mit dem Home-Assistant-Token muss noch live bestätigt werden. Bei abweichender Antwortstruktur erfolgt eine Fehlermeldung und keine Schätzung aus dem Kontostand. Insbesondere werden unbekannte Punkteaufteilungen nicht als Null ausgegeben.
 
 Die neuen Sensoren eignen sich für Dashboard-Anzeigen und die normale Zustandshistorie. Für die abgeleiteten Sensoren werden keine Langzeitstatistiken eingerichtet. Ein Kurs- oder Punktebasiswechsel berechnet den angezeigten Gegenwert neu. Er beschreibt damit den Gegenwert zum aktuell eingestellten Kurs.
+
+
+## Übersichtliche Sensorgruppen ab 0.4.0
+
+Unter **Einstellungen → Geräte & Dienste → MakerWorld Creator Stats → Konfigurieren** zunächst eine Anzeige auswählen.
+
+| Auswahl | Rechensensoren |
+| --- | --- |
+| Nur Guthaben-Gutscheine | Gutscheinwerte und deren 7-, 14- und 30-Tage-Gegenwerte |
+| Nur direkte USD-Auszahlung | USD-Gegenwerte, Auszahlungsgrenzen und exklusive USD-Einnahmen für 7, 14 und 30 Tage |
+| Gutscheine und USD-Auszahlung | Beide Gruppen |
+
+Bestehende Installationen übernehmen beim Update zunächst beide Gruppen. Die Auswahl wird pro Konto gespeichert. Im USD-Modus ist keine Shopauswahl erforderlich. Vorhandene Gutschein-Einstellungen werden gespeichert und können bei einer späteren Umschaltung wieder genutzt werden.
+
+Beim Speichern lädt Home Assistant die Integration neu. Abgewählte Rechengruppen werden aus der Entitätenliste entfernt und bei erneuter Auswahl wieder angelegt. Selbst angelegte Dashboard-Karten oder Automationen, die diese Entitäten verwenden, müssen zur Auswahl passen. Aktive Entitäten behalten ihre bisherigen eindeutigen Schlüssel. Die Konto- und Rohpunktesensoren werden weiter angeboten. Die drei allgemeinen Punkte-Einnahmensensoren verwenden im USD-Modus exklusive Punkte und sonst die gewählte Gutschein-Punktebasis.
+
+### Bedeutung der Finanzwerte
+
+| Bezeichnung | Bedeutung |
+| --- | --- |
+| Kontostand | Jetzt vorhandene Punkte nach bisherigen Ausgaben |
+| Insgesamt verdient | Bisher gutgeschriebene Punkte, einschließlich später ausgegebener Punkte |
+| Gutscheine – Kontowert anteilig | Aktueller Punktestand × Guthaben je Gutschein ÷ Punktekosten. Restpunkte werden anteilig bewertet |
+| Gutscheine – Ganze Gutscheine finanzierbar | Ganze Anzahl der Gutscheine, abgerundet aus dem aktuellen Punktestand |
+| Gutscheine – Guthaben ganzer Gutscheine | Ganze Gutscheinanzahl × Gutscheinwert |
+| Gutscheine – Gesamtverdienst als Gegenwert | Bisher verdiente Punkte der gewählten Basis zum heute eingestellten Gutschein-Kurs |
+| USD-Auszahlung – Aktueller Gegenwert | Vorhandene exklusive Punkte × 0,066 USD |
+| USD-Auszahlung – Beantragbar rechnerisch | Durch Kontostand begrenzter exklusiver Betrag, ab 100 USD und maximal 1.000 USD pro Antrag |
+| USD-Auszahlung – Gesamtverdienst als Gegenwert | Bisher verdiente exklusive Punkte × 0,066 USD |
+| Einnahmen 7, 14 oder 30 Tage | Positive Buchungen im entsprechenden Zeitfenster. Ausgaben werden nicht abgezogen |
+
+Beispielsweise ergeben 800 Punkte bei 40 EUR Guthaben für 524 Punkte einen anteiligen Kontowert von 61,07 EUR, einen ganzen Gutschein und 40 EUR Guthaben ganzer Gutscheine. Für den folgenden Gutschein fehlen 248 Punkte.
+
+Die Erklärung jedes Rechensensors steht zusätzlich in seinem Attribut **beschreibung**. Geld-Gegenwerte und beantragbare Beträge beschreiben Rechenwerte. Tatsächliche Shopverfügbarkeit und die Prüfung eines Auszahlungsantrags erfolgen bei MakerWorld.
