@@ -14,8 +14,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = MakerWorldCoordinator(hass, entry, api)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
+    coordinator.reward_options = dict(entry.options)
+    entry.async_on_unload(entry.add_update_listener(async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR])
     return True
+
+
+async def async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    entry.runtime_data.reward_options = dict(entry.options)
+    entry.runtime_data.async_update_listeners()
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

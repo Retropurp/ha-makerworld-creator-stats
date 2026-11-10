@@ -60,3 +60,18 @@ Die Prüfung verwendet künstliche API-Antworten für Datenverarbeitung, HTTP-Ve
 - [Home-Assistant-Datenabfragen](https://developers.home-assistant.io/docs/integration_fetching_data/)
 
 Hinweise zur übernommenen Datenverarbeitung stehen in `THIRD_PARTY.md`.
+
+
+## Guthaben-Gutscheinrechner ab 0.2.0
+
+Nach der Installation unter **Einstellungen → Geräte & Dienste → MakerWorld Creator Stats → Konfigurieren** die Shopregion und Punktebasis auswählen. Bei vorhandenen Installationen ist zunächst kein Shop ausgewählt. Die sechs zusätzlichen Rechensensoren werden verfügbar, sobald eine gültige Konfiguration vorliegt. Änderungen wirken direkt auf die Sensoren.
+
+Die Vorlagen für EU, USA, Großbritannien, Kanada, Australien, Japan, ASIA und Südkorea sind experimentelle Community-Angaben vom 10. April 2026. Währung, Guthaben und Punktekosten vor dem Speichern mit dem eigenen Punkteshop vergleichen. Alle Werte sind überschreibbar. Benutzerdefinierte Angebote sind ebenfalls möglich. Für China ist in dieser Quelle kein Guthaben-Angebot belegt.
+
+Die sechs Sensoren zeigen den rechnerischen Gegenwert des aktuellen Punktekontos und der bisher verdienten Punkte, die finanzierbare ganze Gutscheinanzahl, deren Guthaben, fehlende Punkte und den Fortschritt zum nächsten Gutschein. Die Punktebasis ist wahlweise regulär oder regulär plus exklusiv. Die Auswahl gilt für beide Gegenwerte.
+
+Guthabenwerte werden zum konfigurierten Kurs berechnet. Einlösbarkeit, Bestand im Shop und tatsächlich erhaltenes Gutschein-Guthaben werden dadurch nicht geprüft. Nach einer exakt erreichten Schwelle startet der Fortschritt zum folgenden Gutschein wieder bei null. Fehlende Punkte beziehen sich dann auf einen weiteren vollständigen Gutschein.
+
+Die Sensoren benötigen keine zusätzlichen Bambu-Abfragen. Die Punktebasis, die gewählten Konditionen und der Quellenstand stehen in den Sensorattributen. Für die Rechensensoren ist keine Langzeitstatistikklasse gesetzt, damit ein späterer Wechsel der Währung oder des Kurses keine vermischten Geldstatistiken erzeugt. Die normale Zustandshistorie hängt vom Recorder ab.
+
+[Quellen und regionale Vorlagen](docs/forum-findings-and-reward-values.md)

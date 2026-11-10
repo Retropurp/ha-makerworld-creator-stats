@@ -28,5 +28,30 @@
       "wrong_account": "Bitte mit demselben Bambu-Konto erneut anmelden.",
       "reauth_successful": "Anmeldung erneuert."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Guthaben-Gutscheine konfigurieren",
+        "description": "Wähle deinen Bambu-Shop und die Punktebasis. Regionalvorlagen sind experimentelle Community-Angaben aus April 2026. Für ASIA bitte Shop und USD prüfen. Für China ist in der Quelle kein Guthaben-Angebot belegt.",
+        "data": {
+          "shop_region": "Shopregion",
+          "points_basis": "Punkte für die Berechnung"
+        }
+      },
+      "terms": {
+        "title": "Guthaben-Angebot bestätigen",
+        "description": "Bitte mit deinem Punkteshop vergleichen und bei Bedarf anpassen. Nur Guthaben-Gutscheine eintragen. Währung als ISO-Code (z. B. EUR), Beträge mit Dezimalpunkt eingeben. Die Sensoren zeigen rechnerische Gegenwerte. Einlösbarkeit und Verfügbarkeit werden nicht abgefragt.",
+        "data": {
+          "currency": "Währung (ISO-Code)",
+          "card_value": "Guthaben je Gutschein",
+          "card_points": "Punkte je Gutschein"
+        }
+      }
+    },
+    "error": {
+      "invalid_currency": "Bitte drei Buchstaben eingeben, beispielsweise EUR oder USD.",
+      "invalid_amount": "Bitte eine Zahl von 0.000001 bis 1000000000000 mit Dezimalpunkt eingeben."
+    }
   }
 }

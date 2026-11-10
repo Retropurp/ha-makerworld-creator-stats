@@ -5,6 +5,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .rewards import PRESETS, REWARD_SENSORS, SOURCE, SOURCE_DATE, number, reward_values
 
 
 # Snapshot values can decrease when models or activity are removed.
@@ -48,6 +49,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
         )
         for key, name, icon in SENSORS
     )
+    async_add_entities(
+        MakerWorldRewardSensor(entry.runtime_data, key, name, icon, kind)
+        for key, name, icon, kind in REWARD_SENSORS
+    )
 
 
 class MakerWorldSensor(CoordinatorEntity, SensorEntity):
@@ -71,3 +76,45 @@ class MakerWorldSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         return getattr(self.coordinator.data, self.entity_description.key, None)
+
+
+class MakerWorldRewardSensor(MakerWorldSensor):
+    """Local estimates with explicit terms and no mixed-currency statistics."""
+
+    def __init__(self, coordinator, key, name, icon, kind):
+        super().__init__(coordinator, SensorEntityDescription(key=key, name=name, icon=icon))
+        self._kind = kind
+
+    @property
+    def native_value(self):
+        return reward_values(self.coordinator.data, self.coordinator.reward_options).get(self.entity_description.key)
+
+    @property
+    def native_unit_of_measurement(self):
+        if self._kind == "money":
+            return self.coordinator.reward_options.get("currency")
+        return {"percent": "%", "points": "Punkte"}.get(self._kind)
+
+    @property
+    def extra_state_attributes(self):
+        options = self.coordinator.reward_options
+        preset = options.get("shop_region") in PRESETS
+        modified = False
+        if preset:
+            currency, value, points = PRESETS[options["shop_region"]]
+            modified = (
+                options.get("currency") != currency
+                or number(options.get("card_value")) != number(value)
+                or number(options.get("card_points")) != number(points)
+            )
+        return {
+            "rate_modified": modified,
+            "shop_region": options.get("shop_region", "unset"),
+            "points_basis": options.get("points_basis", "regular"),
+            "card_value": options.get("card_value"),
+            "card_points": options.get("card_points"),
+            "experimental": preset,
+            "rate_source": SOURCE if preset and not modified else "user_settings",
+            "rate_source_date": SOURCE_DATE if preset else None,
+            "estimate": True,
+        }
