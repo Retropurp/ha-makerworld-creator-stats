@@ -28,7 +28,7 @@ class ErrorTests(unittest.TestCase):
     def test_cloudflare_server_is_not_a_block_diagnosis(self):
         result = self.classify(headers={"Server": "cloudflare", "CF-Ray": "abcdef"}, body=b'{"error":"forbidden"}')
         self.assertNotIsInstance(result, errors.CloudflareError)
-        self.assertIn("Ursache nicht eindeutig", str(result))
+        self.assertIn("The cause is unknown", str(result))
 
     def test_cloudflare_word_in_json_does_not_prove_a_block(self):
         self.assertNotIsInstance(self.classify(body=b'{"message":"cloudflare"}'), errors.CloudflareError)
