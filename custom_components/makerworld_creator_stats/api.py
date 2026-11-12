@@ -57,25 +57,25 @@ class MakerWorldApi:
                     raise CodeError("Request a new code or check the code")
                 if response.status in (403, 429):
                     labels = {
-                        EMAIL_CODE: "Anmeldecode anfordern", LOGIN: "Anmeldung",
-                        PROFILE: "Kontoprofil", POINTS: "Punktestand", BOOSTS: "Boosts",
+                        EMAIL_CODE: "Request sign-in code", LOGIN: "Sign-in",
+                        PROFILE: "Account profile", POINTS: "Point balance", BOOSTS: "Boost tokens",
                     }
                     prefix = await response.content.read(8192)
                     raise classify_denial(
                         response.status, response.headers, prefix,
-                        labels.get(path, "Transaktionsverlauf"),
+                        labels.get(path, "Transaction history"),
                     )
                 if not 200 <= response.status < 300:
-                    raise ApiError(f"Bambu meldet HTTP {response.status}")
+                    raise ApiError(f"Bambu Lab returned HTTP {response.status}")
                 if path == EMAIL_CODE and not (await response.read()).strip():
                     return {}
                 data = await response.json(content_type=None)
         except TimeoutError:
-            raise ApiError("Zeitüberschreitung") from None
+            raise ApiError("Request timed out") from None
         except ClientError:
-            raise ApiError("Verbindungsfehler (Netzwerk oder TLS)") from None
+            raise ApiError("Network or TLS connection failed") from None
         except ValueError:
-            raise ApiError("Antwort enthält kein gültiges JSON") from None
+            raise ApiError("Response is not valid JSON") from None
         if not isinstance(data, dict):
             raise ApiError("Unexpected response format")
         if data.get("code") not in (None, 0, "0"):
