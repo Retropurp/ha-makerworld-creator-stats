@@ -119,7 +119,8 @@ class RewardsOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Required("sensor_view", default=self._settings.get("sensor_view", "both")): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=[{"value": key, "label": label} for key, label in VIEWS.items()],
+                        options=list(VIEWS),
+                        translation_key="sensor_view",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
@@ -142,13 +143,15 @@ class RewardsOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Required("shop_region", default=self._settings.get("shop_region", "unset")): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=[{"value": key, "label": label} for key, label in REGIONS.items()],
+                        options=list(REGIONS),
+                        translation_key="shop_region",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
                 vol.Required("points_basis", default=self._settings.get("points_basis", "regular")): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=[{"value": key, "label": label} for key, label in BASES.items()],
+                        options=list(BASES),
+                        translation_key="points_basis",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
