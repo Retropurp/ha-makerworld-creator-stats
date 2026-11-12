@@ -1,64 +1,253 @@
 {
-  "title": "MakerWorld Creator Stats",
   "config": {
     "step": {
       "user": {
-        "title": "MakerWorld anmelden",
-        "description": "Gib deine Bambu-Konto-E-Mail-Adresse ein. Bambu sendet dir einen Anmeldecode. Unterstützt werden globale Konten auf api.bambulab.com.",
+        "title": "Sign in to MakerWorld",
+        "description": "Enter the email address associated with your Bambu Lab account. Bambu Lab will send a one-time verification code. Only global accounts on api.bambulab.com are currently supported.",
         "data": {
-          "email": "E-Mail-Adresse"
+          "email": "Email address"
         }
       },
       "code": {
-        "title": "E-Mail-Code eingeben",
-        "description": "Gib den Code aus deiner Bambu-E-Mail ein. Für einen neuen Code aktiviere das Kontrollkästchen und bestätige. Der Zugangstoken wird lokal in Home Assistant gespeichert.",
+        "title": "Enter verification code",
+        "description": "Enter the code from the Bambu Lab email. To request another code, select the checkbox. Home Assistant stores the resulting access token in its local configuration.",
         "data": {
-          "code": "Anmeldecode",
-          "resend": "Neuen Code anfordern"
+          "code": "Verification code",
+          "resend": "Request a new code"
         }
       }
     },
     "error": {
-      "invalid_email": "Bitte eine gültige E-Mail-Adresse eingeben.",
-      "cannot_connect": "Anfrage an Bambu fehlgeschlagen. {detail}",
-      "invalid_code": "Code ungültig oder abgelaufen. Bitte prüfen oder einen neuen Code anfordern."
+      "invalid_email": "Enter a valid email address.",
+      "cannot_connect": "Unable to complete the Bambu Lab request: {detail}",
+      "invalid_code": "The code is invalid or has expired. Check the code or request a new one."
     },
     "abort": {
-      "already_configured": "Dieses MakerWorld-Konto ist bereits eingerichtet.",
-      "wrong_account": "Bitte mit demselben Bambu-Konto erneut anmelden.",
-      "reauth_successful": "Anmeldung erneuert."
+      "already_configured": "This MakerWorld account is already configured.",
+      "wrong_account": "Sign in with the same Bambu Lab account used for this integration.",
+      "reauth_successful": "Authentication updated successfully."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Sensorgruppen auswählen",
-        "description": "Gutscheine zeigen den Wert deiner Punkte als Bambu-Shop-Guthaben. USD-Auszahlung rechnet exklusive Punkte zum Bargeld-Gegenwert mit einer Mindestgrenze von 100 USD um. Die Auswahl umfasst auch die jeweiligen 7-, 14- und 30-Tage-Gegenwerte. Abgewählte Gruppen werden aus der Entitätenliste entfernt. Selbst angelegte Dashboard-Karten mit diesen Entitäten müssen dann angepasst werden. Die allgemeinen Konto- und Punktesensoren sind weiter verfügbar.",
+        "title": "Select sensor groups",
+        "description": "Select which calculated reward sensors to enable. Gift card values are estimates based on the selected store terms; USD cash rewards use exclusive points and a USD 100 minimum payout threshold. The selection also controls the corresponding 7-, 14-, and 30-day estimates. Disabled groups are removed from the entity registry, so dashboards and automations referencing them may need updating. Account and raw point sensors remain available.",
         "data": {
-          "sensor_view": "Welche Rechensensoren möchtest du verwenden?"
-        }
-      },
-      "terms": {
-        "title": "Guthaben-Angebot bestätigen",
-        "description": "Prüfe den Gutschein-Kurs im Punkteshop. Beispiel EU: Währung EUR, Guthaben 40 und Kosten 524 Punkte. Hier geht es um Guthaben-Gutscheine. Beträge mit Dezimalpunkt eingeben. Anteiliges Guthaben ist ein Rechenwert. Ganze Gutscheine werden abgerundet gezählt. Shopbestand und Einlösbarkeit prüft die Integration nicht.",
-        "data": {
-          "currency": "Währung (ISO-Code)",
-          "card_value": "Guthaben je Gutschein",
-          "card_points": "Punkte je Gutschein"
+          "sensor_view": "Calculated sensor groups"
         }
       },
       "shop": {
-        "title": "Guthaben-Gutscheine konfigurieren",
-        "description": "Wähle den Bambu-Shop für Guthaben-Gutscheine. Die Punktebasis gilt für Gutscheinwerte und Punkte-Einnahmen. Regulär plus exklusiv verwendet beide Punktetypen für die Gutscheinrechnung. Die separate USD-Auszahlung verwendet stets exklusive Punkte. EU mit 40 EUR für 524 Punkte wurde am 10. November 2026 im Shop bestätigt. Weitere Vorlagen sind experimentell.",
+        "title": "Configure gift card estimates",
+        "description": "Select the Bambu Lab store region and the points to include in the estimate. The combined basis uses regular and exclusive points for gift cards; USD cash rewards always use exclusive points. The EU offer of EUR 40 for 524 points was verified by the project author on 10 November 2026. Other regional presets are experimental.",
         "data": {
-          "shop_region": "Shopregion",
-          "points_basis": "Punkte für die Berechnung"
+          "shop_region": "Store region",
+          "points_basis": "Points included in estimates"
+        }
+      },
+      "terms": {
+        "title": "Review gift card terms",
+        "description": "Check the current offer in your own Bambu Lab point store. The EU example is EUR 40 for 524 points. Use a period as the decimal separator. Partial values are estimates; whole gift cards are counted by rounding down. This integration does not verify redemption eligibility or store availability.",
+        "data": {
+          "currency": "Currency (ISO code)",
+          "card_value": "Value per gift card",
+          "card_points": "Points per gift card"
         }
       }
     },
     "error": {
-      "invalid_currency": "Bitte drei Buchstaben eingeben, beispielsweise EUR oder USD.",
-      "invalid_amount": "Bitte eine Zahl von 0.000001 bis 1000000000000 mit Dezimalpunkt eingeben."
+      "invalid_currency": "Enter a three-letter currency code, such as EUR or USD.",
+      "invalid_amount": "Enter a number from 0.000001 to 1000000000000 using a period as the decimal separator."
+    }
+  },
+  "selector": {
+    "sensor_view": {
+      "options": {
+        "both": "Gift cards and USD cash rewards",
+        "gifts": "Gift cards only",
+        "cash": "USD cash rewards only"
+      }
+    },
+    "shop_region": {
+      "options": {
+        "unset": "Select a store",
+        "eu": "European Union · EUR · 40 / 524 points · author-verified",
+        "us": "United States · USD · experimental",
+        "uk": "United Kingdom · GBP · experimental",
+        "ca": "Canada · CAD · experimental",
+        "au": "Australia · AUD · experimental",
+        "jp": "Japan · JPY · experimental",
+        "asia": "Asia (forum-reported) · USD · experimental; verify currency",
+        "kr": "South Korea · KRW · experimental",
+        "cn": "China · no verified gift card offer",
+        "custom": "Custom offer"
+      }
+    },
+    "points_basis": {
+      "options": {
+        "regular": "Regular points only",
+        "combined": "Regular and exclusive points"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "design_downloads": {
+        "name": "Model downloads"
+      },
+      "instance_downloads": {
+        "name": "Print profile downloads"
+      },
+      "total_downloads": {
+        "name": "Combined downloads"
+      },
+      "design_prints": {
+        "name": "Model prints"
+      },
+      "instance_prints": {
+        "name": "Print profile prints"
+      },
+      "total_prints": {
+        "name": "Combined prints"
+      },
+      "designs": {
+        "name": "Published models"
+      },
+      "likes": {
+        "name": "Likes"
+      },
+      "collections": {
+        "name": "Collections"
+      },
+      "followers": {
+        "name": "Followers"
+      },
+      "following": {
+        "name": "Following"
+      },
+      "level": {
+        "name": "Level"
+      },
+      "points": {
+        "name": "Total point balance"
+      },
+      "points_regular": {
+        "name": "Regular point balance"
+      },
+      "points_exclusive": {
+        "name": "Exclusive point balance"
+      },
+      "points_earned": {
+        "name": "Regular points earned (lifetime)"
+      },
+      "points_spent": {
+        "name": "Regular points spent (lifetime)"
+      },
+      "points_earned_exclusive": {
+        "name": "Exclusive points earned (lifetime)"
+      },
+      "points_spent_exclusive": {
+        "name": "Exclusive points spent (lifetime)"
+      },
+      "points_income_total": {
+        "name": "Total points earned (lifetime)"
+      },
+      "points_expense_total": {
+        "name": "Total points spent (lifetime)"
+      },
+      "boosts_received": {
+        "name": "Boosts received"
+      },
+      "boost_tokens": {
+        "name": "Available boost tokens"
+      },
+      "boosts_used": {
+        "name": "Boost tokens used"
+      },
+      "boosts_expired": {
+        "name": "Boost tokens expired"
+      },
+      "reward_balance_value": {
+        "name": "Gift cards: estimated balance value"
+      },
+      "reward_earned_value": {
+        "name": "Gift cards: estimated lifetime earnings"
+      },
+      "reward_cards": {
+        "name": "Gift cards: whole cards affordable"
+      },
+      "reward_credit": {
+        "name": "Gift cards: value of whole cards"
+      },
+      "reward_missing": {
+        "name": "Gift cards: points to next card"
+      },
+      "reward_progress": {
+        "name": "Gift cards: progress to next card"
+      },
+      "cash_balance_value": {
+        "name": "USD cash rewards: current estimated value"
+      },
+      "cash_earned_value": {
+        "name": "USD cash rewards: estimated lifetime earnings"
+      },
+      "cash_claimable": {
+        "name": "USD cash rewards: estimated claimable amount"
+      },
+      "cash_missing_usd": {
+        "name": "USD cash rewards: amount to minimum"
+      },
+      "cash_missing_points": {
+        "name": "USD cash rewards: points to minimum"
+      },
+      "cash_progress": {
+        "name": "USD cash rewards: progress to minimum"
+      },
+      "income_points_7d_regular": {
+        "name": "Regular points earned in 7 days"
+      },
+      "income_points_7d_combined": {
+        "name": "Combined points earned in 7 days"
+      },
+      "income_points_7d_exclusive": {
+        "name": "Exclusive points earned in 7 days"
+      },
+      "income_money_7d": {
+        "name": "Gift card earnings estimate (7 days)"
+      },
+      "income_cash_7d": {
+        "name": "USD cash earnings estimate (7 days)"
+      },
+      "income_points_14d_regular": {
+        "name": "Regular points earned in 14 days"
+      },
+      "income_points_14d_combined": {
+        "name": "Combined points earned in 14 days"
+      },
+      "income_points_14d_exclusive": {
+        "name": "Exclusive points earned in 14 days"
+      },
+      "income_money_14d": {
+        "name": "Gift card earnings estimate (14 days)"
+      },
+      "income_cash_14d": {
+        "name": "USD cash earnings estimate (14 days)"
+      },
+      "income_points_30d_regular": {
+        "name": "Regular points earned in 30 days"
+      },
+      "income_points_30d_combined": {
+        "name": "Combined points earned in 30 days"
+      },
+      "income_points_30d_exclusive": {
+        "name": "Exclusive points earned in 30 days"
+      },
+      "income_money_30d": {
+        "name": "Gift card earnings estimate (30 days)"
+      },
+      "income_cash_30d": {
+        "name": "USD cash earnings estimate (30 days)"
+      }
     }
   }
 }
