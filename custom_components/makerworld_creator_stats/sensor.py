@@ -18,7 +18,7 @@ from .rewards import (
 )
 
 POINT_DESCRIPTIONS = {
-    "points": "Current total point balance reported by MakerWorld, including points already spent.",
+    "points": "Current total point balance reported by MakerWorld, after accounting for points already spent.",
     "points_regular": "Regular points currently available in your MakerWorld account.",
     "points_exclusive": "Exclusive points currently available. Their estimated USD value and payout thresholds are listed under USD cash rewards.",
     "points_earned": "Regular points earned over the account lifetime. Redeeming points does not reduce this total.",
