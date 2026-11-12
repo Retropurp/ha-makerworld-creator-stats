@@ -161,7 +161,7 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         await self.deny(result)
         with self.assertRaises(UpdateFailed) as caught:
             await result._async_update_data()
-        self.assertIn("nicht dauerhaft gespeichert", str(caught.exception))
+        self.assertIn("The pause could not be saved", str(caught.exception))
         self.api.profile.assert_not_awaited()
 
 

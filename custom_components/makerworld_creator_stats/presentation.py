@@ -1,9 +1,9 @@
 """Sensor groups selected by the user in the options dialog."""
 
 VIEWS = {
-    "both": "Gutscheine und USD-Auszahlung",
-    "gifts": "Nur Guthaben-Gutscheine",
-    "cash": "Nur direkte USD-Auszahlung",
+    "both": "Gift cards and USD cash rewards",
+    "gifts": "Gift cards only",
+    "cash": "USD cash rewards only",
 }
 
 

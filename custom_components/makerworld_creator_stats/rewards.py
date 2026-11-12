@@ -16,38 +16,38 @@ PRESETS = {
     "kr": ("KRW", 58000, 490),
 }
 REGIONS = {
-    "unset": "Bitte Shop wählen",
-    "eu": "EU · EUR · 40 € / 524 Punkte · bestätigt",
-    "us": "USA · USD · experimentell",
-    "uk": "Vereinigtes Königreich · GBP · experimentell",
-    "ca": "Kanada · CAD · experimentell",
-    "au": "Australien · AUD · experimentell",
-    "jp": "Japan · JPY · experimentell",
-    "asia": "ASIA laut Forum · USD · experimentell, Währung prüfen",
-    "kr": "Südkorea · KRW · experimentell",
-    "cn": "China · kein Guthaben-Angebot in der Quelle belegt",
-    "custom": "Benutzerdefiniert",
+    "unset": "Select a store",
+    "eu": "European Union · EUR · 40 / 524 points · author-verified",
+    "us": "United States · USD · experimental",
+    "uk": "United Kingdom · GBP · experimental",
+    "ca": "Canada · CAD · experimental",
+    "au": "Australia · AUD · experimental",
+    "jp": "Japan · JPY · experimental",
+    "asia": "Asia (forum-reported) · USD · experimental; verify currency",
+    "kr": "South Korea · KRW · experimental",
+    "cn": "China · no verified gift card offer",
+    "custom": "Custom offer",
 }
-BASES = {"regular": "Nur reguläre Punkte", "combined": "Reguläre und exklusive Punkte"}
+BASES = {"regular": "Regular points only", "combined": "Regular and exclusive points"}
 REWARD_SENSORS = (
-    ("reward_balance_value", "Gutscheine – Kontowert anteilig", "mdi:cash", "money"),
-    ("reward_earned_value", "Gutscheine – Gesamtverdienst als Gegenwert", "mdi:cash-plus", "money"),
-    ("reward_cards", "Gutscheine – Ganze Gutscheine finanzierbar", "mdi:ticket", "count"),
-    ("reward_credit", "Gutscheine – Guthaben ganzer Gutscheine", "mdi:gift", "money"),
-    ("reward_missing", "Gutscheine – Fehlende Punkte zum nächsten", "mdi:target", "points"),
-    ("reward_progress", "Gutscheine – Fortschritt zum nächsten", "mdi:progress-clock", "percent"),
+    ("reward_balance_value", "Gift cards: estimated balance value", "mdi:cash", "money"),
+    ("reward_earned_value", "Gift cards: estimated lifetime earnings", "mdi:cash-plus", "money"),
+    ("reward_cards", "Gift cards: whole cards affordable", "mdi:ticket", "count"),
+    ("reward_credit", "Gift cards: value of whole cards", "mdi:gift", "money"),
+    ("reward_missing", "Gift cards: points to next card", "mdi:target", "points"),
+    ("reward_progress", "Gift cards: progress to next card", "mdi:progress-clock", "percent"),
 )
 CASH_SOURCE = "https://blog.bambulab.com/exclusive-model-program-cash-rewards-and-copyright-support/"
 CASH_RATE = Decimal("0.066")
 CASH_MIN = Decimal("100")
 CASH_MAX = Decimal("1000")
 CASH_SENSORS = (
-    ("cash_balance_value", "USD-Auszahlung – Aktueller Gegenwert", "mdi:currency-usd", "cash"),
-    ("cash_earned_value", "USD-Auszahlung – Gesamtverdienst als Gegenwert", "mdi:cash-plus", "cash"),
-    ("cash_claimable", "USD-Auszahlung – Beantragbar rechnerisch", "mdi:cash-check", "cash"),
-    ("cash_missing_usd", "USD-Auszahlung – Fehlender Betrag bis 100 USD", "mdi:target", "cash"),
-    ("cash_missing_points", "USD-Auszahlung – Fehlende Punkte bis 100 USD", "mdi:target", "points"),
-    ("cash_progress", "USD-Auszahlung – Fortschritt bis 100 USD", "mdi:progress-clock", "percent"),
+    ("cash_balance_value", "USD cash rewards: current estimated value", "mdi:currency-usd", "cash"),
+    ("cash_earned_value", "USD cash rewards: estimated lifetime earnings", "mdi:cash-plus", "cash"),
+    ("cash_claimable", "USD cash rewards: estimated claimable amount", "mdi:cash-check", "cash"),
+    ("cash_missing_usd", "USD cash rewards: amount to minimum", "mdi:target", "cash"),
+    ("cash_missing_points", "USD cash rewards: points to minimum", "mdi:target", "points"),
+    ("cash_progress", "USD cash rewards: progress to minimum", "mdi:progress-clock", "percent"),
 )
 
 
