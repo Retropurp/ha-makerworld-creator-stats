@@ -2,6 +2,14 @@
 
 Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.2.
 
+## Projektstatus
+
+MakerWorld Creator Stats ist ein inoffizielles, unabhängiges Community-Projekt. Es wird nicht von Bambu Lab oder MakerWorld herausgegeben; eine offizielle Freigabe für den verwendeten API-Zugang liegt derzeit nicht vor. Die Bereitstellung als benutzerdefiniertes HACS-Repository ist keine offizielle Anerkennung durch Bambu Lab, MakerWorld oder Home Assistant.
+
+Die Integration liest Statistiken des angemeldeten Kontos und berechnet daraus lokale Dashboard-Werte. Sie steuert keine Drucker, löst keine Gutscheine ein und veranlasst keine Auszahlungen. Geldwerte sind rechnerische Gegenwerte, keine tatsächlich erhaltenen Zahlungen.
+
+Stand 12. November 2026: Die Integration wurde in der eigenen Home-Assistant-Installation mit einem echten Konto erfolgreich genutzt. Später traten Zugriffsprobleme auf, darunter HTTP-403-Antworten und Cloudflare-Schutzprüfungen. Der bisherige Erfolg bestätigt weder einen dauerhaft verfügbaren Zugriff noch eine Freigabe der Schnittstellen. Ein abgestimmter Zugangsweg mit Bambu/MakerWorld ist noch zu klären.
+
 ## Abfragehäufigkeit und Schutzpausen
 
 Kontostatistiken werden ungefähr alle 30 Minuten aktualisiert, mit bis zu einer Minute zufälligem Zeitversatz. Der Transaktionsverlauf wird höchstens alle sechs Stunden importiert. Alle darauf basierenden Rechensensoren verwenden diese gemeinsam geladenen Daten und erzeugen keine eigenen API-Abfragen.
@@ -67,7 +75,9 @@ Die Anwendung selbst schreibt keine Anmeldeinformationen, API-Antworten oder Tok
 
 ## Prüfstand
 
-Die Prüfung verwendet künstliche API-Antworten für Datenverarbeitung, HTTP-Verhalten und Fehlerfälle. Die Fassung wurde noch nicht in einer laufenden Home-Assistant-Installation mit einem echten Bambu-Konto getestet. Insbesondere kann Bambu die automatisierte Anmeldung oder Abfragen durch Bot-Schutz blockieren. Ein erfolgreicher Live-Test bleibt erforderlich.
+Automatisierte Prüfungen verwenden künstliche API-Antworten für Datenverarbeitung, HTTP-Verhalten und Fehlerfälle. Zusätzlich wurden Anmeldung, Kontostatistiken, Punkte-Gegenwerte, Transaktionsimport und Sensorgruppenauswahl in der eigenen Home-Assistant-Installation erfolgreich erprobt. Das ist ein Praxistest mit einem Konto, keine umfassende Bestätigung für andere Konten, Regionen oder alle Fehlerfälle.
+
+Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen.
 
 ## Quellen
 
@@ -105,7 +115,7 @@ Der rückwirkende Import nutzt denselben Bambu-Transaktions-Endpunkt wie die vor
 
 Alle Historienseiten werden zuerst vollständig geprüft und danach gemeinsam übernommen. Bei einem Fehler stehen die neuen Zeitraumwerte auf nicht verfügbar. Die Attribute history_error und history_synced_at geben den bereinigten Fehler und den Zeitpunkt des letzten erfolgreichen Imports an. Der Zeitpunkt wird als Unix-Zeitstempel angegeben. Die minimalen Historienwerte mit Buchungszeit und Punktebeträgen werden lokal im Home-Assistant-Speicher zwischengespeichert. Ein Neustart übernimmt den Cache und den verbleibenden Sechs-Stunden-Abstand. Zugangsdaten und Modellnamen werden in diesem Cache nicht gespeichert.
 
-Der Verlauf im angemeldeten Browser zeigte datierte Gutschriften einschließlich exklusiver Punkte. Der automatisierte Import mit dem Home-Assistant-Token muss noch live bestätigt werden. Bei abweichender Antwortstruktur erfolgt eine Fehlermeldung und keine Schätzung aus dem Kontostand. Insbesondere werden unbekannte Punkteaufteilungen nicht als Null ausgegeben.
+Der Verlauf im angemeldeten Browser zeigte datierte Gutschriften einschließlich exklusiver Punkte. Der automatisierte Import mit dem Home-Assistant-Token wurde anschließend in der eigenen Installation erfolgreich erprobt; die spätere Erreichbarkeit unterliegt den oben beschriebenen Zugriffsproblemen. Bei abweichender Antwortstruktur erfolgt eine Fehlermeldung und keine Schätzung aus dem Kontostand. Insbesondere werden unbekannte Punkteaufteilungen nicht als Null ausgegeben.
 
 Die neuen Sensoren eignen sich für Dashboard-Anzeigen und die normale Zustandshistorie. Für die abgeleiteten Sensoren werden keine Langzeitstatistiken eingerichtet. Ein Kurs- oder Punktebasiswechsel berechnet den angezeigten Gegenwert neu. Er beschreibt damit den Gegenwert zum aktuell eingestellten Kurs.
 
