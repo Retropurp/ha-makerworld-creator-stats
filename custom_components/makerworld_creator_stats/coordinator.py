@@ -45,7 +45,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
                 self.pause["state"].restore(await self.pause_store.async_load(), time.time())
             except (OSError, ValueError, TypeError, OverflowError):
                 raise UpdateFailed(
-                    "Gespeicherte Abfragepause nicht lesbar. Zum Schutz vor erneuten Anfragen wird gewartet.",
+                    "Stored request pause could not be read. Requests are deferred to avoid repeated access attempts.",
                     retry_after=3600,
                 ) from None
             self.pause["loaded"] = True
@@ -118,10 +118,10 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
 
     def _pause_failure(self, remaining, detail=""):
         until = datetime.fromtimestamp(self.pause["state"].until, timezone.utc)
-        reason = "Cloudflare" if self.pause["state"].reason == "cloudflare" else "Anfragebegrenzung"
-        message = f"{reason}: Abfragepause bis {until:%d.%m.%Y %H:%M} UTC. Bis dahin keine Statistikabfragen."
+        reason = "Cloudflare" if self.pause["state"].reason == "cloudflare" else "Rate limiting"
+        message = f"{reason}: requests paused until {until:%Y-%m-%d %H:%M} UTC. No statistics requests will be sent before then."
         if not self.pause["persisted"]:
-            message += " Pause konnte nicht dauerhaft gespeichert werden; Home Assistant vorerst nicht neu starten."
+            message += " The pause could not be saved; avoid restarting Home Assistant until the issue is resolved."
         if detail:
             message += f" {detail}"
         return UpdateFailed(message, retry_after=remaining)
