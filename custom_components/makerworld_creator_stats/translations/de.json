@@ -1,5 +1,4 @@
 {
-  "title": "MakerWorld Creator Stats",
   "config": {
     "step": {
       "user": {
@@ -59,6 +58,196 @@
     "error": {
       "invalid_currency": "Bitte drei Buchstaben eingeben, beispielsweise EUR oder USD.",
       "invalid_amount": "Bitte eine Zahl von 0.000001 bis 1000000000000 mit Dezimalpunkt eingeben."
+    }
+  },
+  "selector": {
+    "sensor_view": {
+      "options": {
+        "both": "Gutscheine und USD-Auszahlung",
+        "gifts": "Nur Guthaben-Gutscheine",
+        "cash": "Nur direkte USD-Auszahlung"
+      }
+    },
+    "shop_region": {
+      "options": {
+        "unset": "Bitte Shop wählen",
+        "eu": "EU · EUR · 40 € / 524 Punkte · vom Autor bestätigt",
+        "us": "USA · USD · experimentell",
+        "uk": "Vereinigtes Königreich · GBP · experimentell",
+        "ca": "Kanada · CAD · experimentell",
+        "au": "Australien · AUD · experimentell",
+        "jp": "Japan · JPY · experimentell",
+        "asia": "Asien laut Forum · USD · experimentell, Währung prüfen",
+        "kr": "Südkorea · KRW · experimentell",
+        "cn": "China · kein belegtes Guthaben-Angebot",
+        "custom": "Benutzerdefiniert"
+      }
+    },
+    "points_basis": {
+      "options": {
+        "regular": "Nur reguläre Punkte",
+        "combined": "Reguläre und exklusive Punkte"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "design_downloads": {
+        "name": "Downloads Modelle"
+      },
+      "instance_downloads": {
+        "name": "Downloads Druckprofile"
+      },
+      "total_downloads": {
+        "name": "Downloads kombiniert"
+      },
+      "design_prints": {
+        "name": "Drucke Modelle"
+      },
+      "instance_prints": {
+        "name": "Drucke Druckprofile"
+      },
+      "total_prints": {
+        "name": "Drucke kombiniert"
+      },
+      "designs": {
+        "name": "Veröffentlichte Modelle"
+      },
+      "likes": {
+        "name": "Likes"
+      },
+      "collections": {
+        "name": "Sammlungen"
+      },
+      "followers": {
+        "name": "Follower"
+      },
+      "following": {
+        "name": "Gefolgte Konten"
+      },
+      "level": {
+        "name": "Level"
+      },
+      "points": {
+        "name": "Punkte – Kontostand gesamt"
+      },
+      "points_regular": {
+        "name": "Reguläre Punkte – Kontostand"
+      },
+      "points_exclusive": {
+        "name": "Exklusive Punkte – Kontostand"
+      },
+      "points_earned": {
+        "name": "Reguläre Punkte – Insgesamt verdient"
+      },
+      "points_spent": {
+        "name": "Reguläre Punkte – Insgesamt ausgegeben"
+      },
+      "points_earned_exclusive": {
+        "name": "Exklusive Punkte – Insgesamt verdient"
+      },
+      "points_spent_exclusive": {
+        "name": "Exklusive Punkte – Insgesamt ausgegeben"
+      },
+      "points_income_total": {
+        "name": "Punkte insgesamt verdient"
+      },
+      "points_expense_total": {
+        "name": "Punkte insgesamt ausgegeben"
+      },
+      "boosts_received": {
+        "name": "Boosts erhalten"
+      },
+      "boost_tokens": {
+        "name": "Boost-Tokens verfügbar"
+      },
+      "boosts_used": {
+        "name": "Boost-Tokens verwendet"
+      },
+      "boosts_expired": {
+        "name": "Boost-Tokens verfallen"
+      },
+      "reward_balance_value": {
+        "name": "Gutscheine – Kontowert anteilig"
+      },
+      "reward_earned_value": {
+        "name": "Gutscheine – Gesamtverdienst als Gegenwert"
+      },
+      "reward_cards": {
+        "name": "Gutscheine – Ganze Gutscheine finanzierbar"
+      },
+      "reward_credit": {
+        "name": "Gutscheine – Guthaben ganzer Gutscheine"
+      },
+      "reward_missing": {
+        "name": "Gutscheine – Fehlende Punkte zum nächsten"
+      },
+      "reward_progress": {
+        "name": "Gutscheine – Fortschritt zum nächsten"
+      },
+      "cash_balance_value": {
+        "name": "USD-Auszahlung – Aktueller Gegenwert"
+      },
+      "cash_earned_value": {
+        "name": "USD-Auszahlung – Gesamtverdienst als Gegenwert"
+      },
+      "cash_claimable": {
+        "name": "USD-Auszahlung – Beantragbar rechnerisch"
+      },
+      "cash_missing_usd": {
+        "name": "USD-Auszahlung – Fehlender Betrag bis 100 USD"
+      },
+      "cash_missing_points": {
+        "name": "USD-Auszahlung – Fehlende Punkte bis 100 USD"
+      },
+      "cash_progress": {
+        "name": "USD-Auszahlung – Fortschritt bis 100 USD"
+      },
+      "income_points_7d_regular": {
+        "name": "Punkte regulär – Einnahmen 7 Tage"
+      },
+      "income_points_7d_combined": {
+        "name": "Punkte gesamt – Einnahmen 7 Tage"
+      },
+      "income_points_7d_exclusive": {
+        "name": "Punkte exklusiv – Einnahmen 7 Tage"
+      },
+      "income_money_7d": {
+        "name": "Gutscheine – Einnahmen-Gegenwert 7 Tage"
+      },
+      "income_cash_7d": {
+        "name": "USD-Auszahlung – Einnahmen-Gegenwert 7 Tage"
+      },
+      "income_points_14d_regular": {
+        "name": "Punkte regulär – Einnahmen 14 Tage"
+      },
+      "income_points_14d_combined": {
+        "name": "Punkte gesamt – Einnahmen 14 Tage"
+      },
+      "income_points_14d_exclusive": {
+        "name": "Punkte exklusiv – Einnahmen 14 Tage"
+      },
+      "income_money_14d": {
+        "name": "Gutscheine – Einnahmen-Gegenwert 14 Tage"
+      },
+      "income_cash_14d": {
+        "name": "USD-Auszahlung – Einnahmen-Gegenwert 14 Tage"
+      },
+      "income_points_30d_regular": {
+        "name": "Punkte regulär – Einnahmen 30 Tage"
+      },
+      "income_points_30d_combined": {
+        "name": "Punkte gesamt – Einnahmen 30 Tage"
+      },
+      "income_points_30d_exclusive": {
+        "name": "Punkte exklusiv – Einnahmen 30 Tage"
+      },
+      "income_money_30d": {
+        "name": "Gutscheine – Einnahmen-Gegenwert 30 Tage"
+      },
+      "income_cash_30d": {
+        "name": "USD-Auszahlung – Einnahmen-Gegenwert 30 Tage"
+      }
     }
   }
 }
