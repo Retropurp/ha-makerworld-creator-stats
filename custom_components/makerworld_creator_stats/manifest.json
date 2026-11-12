@@ -2,7 +2,8 @@
   "domain": "makerworld_creator_stats",
   "name": "MakerWorld Creator Stats",
   "categories": [
-    "computers_network.cloud_developer_tools"
+    "diy_makers.web_data_connectors",
+    "computers_network.monitoring"
   ],
   "codeowners": [
     "@Retropurp"
