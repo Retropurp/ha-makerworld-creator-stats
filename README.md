@@ -45,7 +45,7 @@ On 12 November 2026, [Bambu Lab publicly explained](https://forum.bambulab.com/t
 
 Your email address and access token are stored in Home Assistant's local configuration. Keep backups private.
 
-Profile updates normally run every 60–61 minutes. If enabled, private points and boost requests have separate approximately six-hour schedules, staggered with at most one optional request per profile cycle. A cold start without an active pause reads the profile only. Reloads during the current profile interval reuse in-memory data. Profile failures use a two-hour retry interval, also during setup. Cached optional values can survive failures for up to four hours after their last successful update. HTTP 403, HTTP 429 and Cloudflare challenges can trigger persistent protection pauses. Check the diagnostic timestamps before retrying.
+In stable 0.4.3, profile updates normally run every 30–31 minutes. Points and boost requests have separate approximately two-hour schedules, staggered with at most one optional request per profile cycle. A cold start without an active pause reads the profile only. Reloads during the current profile interval reuse in-memory data. Profile failures use a two-hour retry interval, also during setup. Cached optional values can survive failures for up to four hours after their last successful update. HTTP 403, HTTP 429 and Cloudflare challenges can trigger persistent protection pauses. Check the diagnostic timestamps before retrying.
 
 ## Further reading
 
