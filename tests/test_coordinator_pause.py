@@ -320,7 +320,9 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         again = await self.create(types.SimpleNamespace(data={}))
         self.assertEqual(again._due["points"], due)
         self.assertIsNone((await again._async_update_data()).points_earned)
-        self.api.read_stats.assert_awaited_once_with(coordinator.POINTS)
+        self.assertEqual(self.api.read_stats.await_args_list, [
+            call(coordinator.BOOSTS), call(coordinator.POINTS),
+        ])
 
     async def test_optional_denial_escalates_after_profile_only_restart(self):
         result = await self.create()
