@@ -309,9 +309,9 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.api.read_stats.assert_not_awaited()
         # First service the overdue boosts request, then the due points request.
         # The requests are staggered so that only one private call occurs per cycle.
-        self.now += 3600
+        self.now += 7200
         await restarted._async_update_data()
-        self.now += 10800
+        self.now += 7200
         self.api.read_stats.side_effect = errors.ApiError("Offline")
         self.assertEqual((await restarted._async_update_data()).points_earned, 12)
         self.assertEqual(restarted.connection_status, "partial")
