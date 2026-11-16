@@ -12,8 +12,8 @@ CLIENT_VERSION = json.loads(
 )["version"]
 USER_AGENT = f"{CLIENT_NAME}/v{CLIENT_VERSION}"
 
-# Beta 2: statistics poll carefully with independent refresh windows.
-# The paginated transaction-history import remains disabled.
+# Rate-conscious polling uses separate refresh windows.
+# Paginated transaction-history imports are currently disabled.
 BASE_URL = "https://api.bambulab.com"
 EMAIL_CODE = "/v1/user-service/user/sendemail/code"
 LOGIN = "/v1/user-service/user/login"

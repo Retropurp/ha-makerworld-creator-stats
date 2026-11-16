@@ -4,19 +4,27 @@
 
 MakerWorld Creator Stats ist eine eigenständige Home-Assistant-Integration für Creator-Statistiken, Punkte, Boosts und geschätzte Prämienwerte.
 
-## Beta 4
+## Stabile Version 0.4.3
 
-Beta 4 schützt vor wiederholten Profilabfragen bei Startfehlern und beim Neuladen. Einrichtung, Optionen, Sensornamen und Verbindungsstatus sind auf Deutsch und Englisch verfügbar. Das violette Diagramm-Icon ist ein eigenes Projektmotiv. Home Assistant kann mitgelieferte Symbole benutzerdefinierter Integrationen ab Version 2026.3 anzeigen.
+Version 0.4.3 verwendet die eigene Client-Kennung `ha-makerworld-creator-stats/v0.4.3` statt der bisherigen OrcaSlicer-Kennung. Sie schützt vor wiederholten Anfragen bei Startfehlern und Neuladen, verwendet vorsichtige Aktualisierungsintervalle und bietet deutsche sowie englische Oberflächentexte. Das violette Diagramm-Icon ist ein eigenes Projektmotiv, kein offizielles Bambu-Lab-Logo.
+
+**Änderung gegenüber 0.4.2:** Der Import vieler einzelner Punktetransaktionen bleibt deaktiviert. Die bisherigen 7-, 14- und 30-Tage-Einnahmesensoren behalten ihre IDs, liefern aber vorerst keinen Wert. Weitere Informationen: [Release Notes](RELEASE_NOTES_0.4.3.md).
 
 Die 7-, 14- und 30-Tage-Einnahmesensoren bleiben nicht verfügbar. Ihre eindeutigen IDs bleiben erhalten. Die Diagnose zeigt die nächste Profil-, Punkte- und Boost-Aktualisierung, die letzte erfolgreiche Profilabfrage und den API-Verbindungsstatus.
 
 ## Projektstatus
 
-MakerWorld Creator Stats ist ein inoffizielles, unabhängiges Community-Projekt. Es wird nicht von Bambu Lab oder MakerWorld herausgegeben; eine offizielle Freigabe für den verwendeten API-Zugang liegt derzeit nicht vor. Die Bereitstellung als benutzerdefiniertes HACS-Repository ist keine offizielle Anerkennung durch Bambu Lab, MakerWorld oder Home Assistant.
+MakerWorld Creator Stats ist ein unabhängiges, inoffizielles Community-Projekt. Bambu Lab gestattet Drittanbietern nach eigener öffentlicher Erklärung bestimmte nichtkritische Cloud-Nutzungen innerhalb angemessener Grenzen, insbesondere lesendes Druckermonitoring. Das ist eine positive Grundlage für Community-Integrationen, aber noch keine ausdrückliche Freigabe unserer konkreten undokumentierten MakerWorld-Statistikendpunkte. Die Aufnahme oder Installation in HACS bedeutet keine offizielle Unterstützung durch Bambu Lab, MakerWorld oder Home Assistant.
 
 Die Integration liest Statistiken des angemeldeten Kontos und berechnet daraus lokale Dashboard-Werte. Sie steuert keine Drucker, löst keine Gutscheine ein und veranlasst keine Auszahlungen. Geldwerte sind rechnerische Gegenwerte, keine tatsächlich erhaltenen Zahlungen.
 
-Stand 12. November 2026: Die Integration wurde in der eigenen Home-Assistant-Installation mit einem echten Konto erfolgreich genutzt. Später traten Zugriffsprobleme auf, darunter HTTP-403-Antworten und Cloudflare-Schutzprüfungen. Der bisherige Erfolg bestätigt weder einen dauerhaft verfügbaren Zugriff noch eine Freigabe der Schnittstellen. Ein abgestimmter Zugangsweg mit Bambu/MakerWorld ist noch zu klären.
+Nach anfänglichen HTTP-403-Problemen verwendet die Integration inzwischen eine eigene, versionierte Kennung und sparsame Abfrageintervalle. Ein erfolgreicher Praxistest mit einem Konto ist kein Nachweis für dauerhaft gewährleisteten Zugang. Die konkreten MakerWorld-Endpunkte sind weiterhin nicht als offiziell unterstützte öffentliche API dokumentiert.
+
+## Drittanbieterzugriff gemäß Bambu Lab
+
+Bambu Lab erklärte am **12. November 2026**, dass Drittanbieter bestimmte ungefährliche Cloud-Funktionen innerhalb angemessener Nutzungsgrenzen weiterhin nutzen können, etwa das lesende Monitoring von Druckerstatus und Temperaturen. Drittanbieter sollten eine **eigene, erkennbare Client-Kennung** verwenden. Wir setzen dies um, indem unsere Integration ausschließlich lesende Statistikabfragen mit eigener Kennung und Schutzpausen ausführt. Bambu Labs Erklärung nennt MakerWorld-Creator-Statistiken, Punkte und Boosts jedoch nicht ausdrücklich; eine spezielle Genehmigung dafür liegt uns noch nicht vor.
+
+Quellen: [Offizielle Stellungnahme von Bambu Lab](https://forum.bambulab.com/t/a-postmortem-on-this-weeks-cloud-traffic-anomaly/262567) und [Einordnung des API-Zugriffs](docs/third-party-cloud-access.md).
 
 ## Abfragehäufigkeit und Schutzpausen
 
@@ -36,7 +44,7 @@ Eine erkannte Schutzprüfung wird dadurch nicht aufgehoben. Es gibt keine bestä
 
 ## Installation über HACS
 
-In HACS unter **⋮ → Benutzerdefinierte Repositories** die Adresse `https://github.com/Retropurp/ha-makerworld-creator-stats` als Typ **Integration** hinzufügen. **MakerWorld Creator Stats** herunterladen, Home Assistant neu starten und unter **Einstellungen → Geräte & Dienste** hinzufügen. Nach Veröffentlichung eines Beta-3-Pre-Releases in der Versionsauswahl v0.4.3-beta4 wählen. Bis dahin lässt sich der Entwicklungsbranch manuell installieren. In Home Assistant mit Marketplace-Unterstützung führt der [Link zum benutzerdefinierten Repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration) zur Integration.
+In HACS unter **⋮ → Benutzerdefinierte Repositories** die Adresse `https://github.com/Retropurp/ha-makerworld-creator-stats` als Typ **Integration** hinzufügen. **MakerWorld Creator Stats** herunterladen, Home Assistant neu starten und unter **Einstellungen → Geräte & Dienste** hinzufügen. Nach Veröffentlichung des stabilen GitHub-Releases `v0.4.3` in der Versionsauswahl die stabile Version installieren; Vorabversionen dafür nicht einschließen. In Home Assistant mit Marketplace-Unterstützung führt der [Link zum benutzerdefinierten Repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration) zur Integration.
 
 ## Manuelle Installation
 
@@ -85,7 +93,7 @@ Die Anwendung selbst schreibt keine Anmeldeinformationen, API-Antworten oder Tok
 
 Automatisierte Prüfungen verwenden künstliche API-Antworten für Datenverarbeitung, HTTP-Verhalten und Fehlerfälle. Zusätzlich wurden Anmeldung, Kontostatistiken, Punkte-Gegenwerte, Transaktionsimport und Sensorgruppenauswahl in der eigenen Home-Assistant-Installation erfolgreich erprobt. Das ist ein Praxistest mit einem Konto, keine umfassende Bestätigung für andere Konten, Regionen oder alle Fehlerfälle.
 
-Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen. Die Installation von Beta 4, die Sprachumschaltung, die Anzeige des Icons und das Upgrade einer laufenden Installation sind separat zu prüfen. Siehe [Beta-Testplan](BETA.md).
+Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen. Die Installation und das Upgrade auf 0.4.3 sollten vor breiter Verteilung mit bestehenden Home-Assistant-Konfigurationen geprüft werden. Siehe [Release Notes](RELEASE_NOTES_0.4.3.md) und den [historischen Beta-Testplan](BETA.md).
 
 ## Quellen
 
