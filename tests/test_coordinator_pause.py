@@ -1,5 +1,6 @@
 """Exercise the real coordinator with simulated HA storage and scheduling."""
 
+import asyncio
 import copy
 from datetime import datetime, timezone
 import importlib
@@ -185,6 +186,79 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.pause["state"].strikes, 0)
         self.assertEqual(result.update_interval.total_seconds(), 1800)
         self.assertEqual(Store.data[result.pause_store.key]["until"], 0)
+
+    async def test_ordinary_startup_failure_waits_across_reload_and_restart(self):
+        first = await self.create()
+        self.api.profile.side_effect = errors.ApiError("Network error")
+        with self.assertRaises(coordinator.ScheduledUpdateFailed) as caught:
+            await first._async_update_data()
+        self.assertEqual(caught.exception.retry_after, 7200)
+        self.assertEqual(Store.data[first.pause_store.key]["profile_retry_at"], self.now + 7200)
+        self.api.profile.side_effect = None
+        self.now += 5
+        reloaded = await self.create()
+        restarted = await self.create(types.SimpleNamespace(data={}))
+        for instance in (first, reloaded, restarted):
+            with self.assertRaises(coordinator.ScheduledUpdateFailed) as pending:
+                await instance._async_update_data()
+            self.assertEqual(pending.exception.retry_after, 7195)
+        self.api.profile.assert_awaited_once()
+        self.api.read_stats.assert_not_awaited()
+        self.now += 7195
+        await restarted.async_refresh()
+        self.assertEqual(self.api.profile.await_count, 2)
+        self.api.read_stats.assert_not_awaited()
+        self.assertEqual(restarted.connection_status, "success")
+
+    async def test_reloads_use_existing_profile_and_keep_optional_schedule(self):
+        first = await self.create()
+        await first.async_refresh()
+        self.now += 60
+        reloaded = await self.create()
+        await reloaded.async_refresh()
+        await reloaded.async_request_refresh()
+        self.assertEqual(reloaded.data.name, "Test")
+        self.assertEqual(reloaded.last_profile_success, self.now - 60)
+        self.assertEqual(reloaded.next_profile_update, self.now + 1740)
+        self.assertEqual(reloaded.update_interval.total_seconds(), 1740)
+        self.api.profile.assert_awaited_once()
+        self.api.read_stats.assert_not_awaited()
+        self.now += 1740
+        await reloaded.async_refresh()
+        self.assertEqual(self.api.profile.await_count, 2)
+        self.api.read_stats.assert_awaited_once_with(coordinator.POINTS)
+
+    async def test_concurrent_refreshes_at_due_time_share_one_profile_request(self):
+        first = await self.create()
+        second = await self.create()
+        request_started = asyncio.Event()
+        release_request = asyncio.Event()
+
+        async def profile():
+            request_started.set()
+            await release_request.wait()
+            return {"uid": 42}
+
+        self.api.profile.side_effect = profile
+        async with asyncio.TaskGroup() as group:
+            group.create_task(first.async_refresh())
+            await request_started.wait()
+            group.create_task(second.async_refresh())
+            release_request.set()
+        self.api.profile.assert_awaited_once()
+        self.api.read_stats.assert_not_awaited()
+        self.assertEqual(first.data, second.data)
+
+    async def test_failed_persistence_still_blocks_in_process_retry(self):
+        first = await self.create()
+        Store.unwritable = True
+        self.api.profile.side_effect = errors.ApiError("Network error")
+        with self.assertRaises(coordinator.ScheduledUpdateFailed):
+            await first._async_update_data()
+        self.assertFalse(first.pause["persisted"])
+        with self.assertRaises(coordinator.ScheduledUpdateFailed):
+            await (await self.create())._async_update_data()
+        self.api.profile.assert_awaited_once()
 
     async def test_optional_throttle_keeps_profile_and_pauses_every_endpoint(self):
         result = await self.create()

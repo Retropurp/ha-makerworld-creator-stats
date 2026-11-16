@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import MakerWorldApi
+from .const import DOMAIN
 from .coordinator import MakerWorldCoordinator
 
 
@@ -26,3 +27,8 @@ async def async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR])
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Drop the in-memory profile when the integration entry is deleted."""
+    hass.data.get(DOMAIN, {}).get("refreshes", {}).pop(entry.entry_id, None)

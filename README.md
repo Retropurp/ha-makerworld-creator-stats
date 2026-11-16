@@ -6,9 +6,9 @@
 
 MakerWorld Creator Stats is an independent Home Assistant integration for the signed-in creator's statistics, point balances, and boosts. It estimates gift card credit and USD cash rewards in Home Assistant using the data already fetched.
 
-## Beta 3
+## Beta 4
 
-This development branch prepares version 0.4.3-beta3 for HACS and the Home Assistant Marketplace. It includes English and German setup, options, sensor names, and status labels. The purple chart icon is project artwork. Home Assistant 2026.3 and later can display branding packaged with a custom integration.
+Beta 4 adds protection against repeated profile requests during setup failures or integration reloads. It includes English and German setup, options, sensor names, and status labels. The purple chart icon is project artwork. Home Assistant 2026.3 and later can display branding packaged with a custom integration.
 
 | Area | What you can see |
 | --- | --- |
@@ -22,18 +22,18 @@ Rolling 7-, 14-, and 30-day income sensors stay unavailable in this beta. Their 
 ## Install and configure
 
 1. Back up your Home Assistant configuration. For an upgrade, keep the existing integration entry.
-2. **HACS:** In **⋮ → Custom repositories**, add `https://github.com/Retropurp/ha-makerworld-creator-stats` as **Integration** and download it. The HACS version selector shows Beta 3 once a corresponding GitHub prerelease exists. Enable prereleases if your HACS version offers the option.
+2. **HACS:** In **⋮ → Custom repositories**, add `https://github.com/Retropurp/ha-makerworld-creator-stats` as **Integration** and download it. The HACS version selector shows Beta 4 once a corresponding GitHub prerelease exists. Enable prereleases if your HACS version offers the option.
 3. **Home Assistant Marketplace:** Use the [custom repository link](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration). The Marketplace checks the repository and version it installs. For an unreleased branch build, use the manual steps below.
 4. Restart Home Assistant. For a new installation, go to **Settings → Devices & services → Add integration → MakerWorld Creator Stats**. Enter the email address of your global Bambu account and the one-time code delivered by Bambu Lab.
 5. Use **Configure** to select reward sensor groups, your shop region, and gift card terms. Deselecting a reward group removes its entities from the registry. Dashboards and automations that use those entities may need updating.
 
-For a manual Beta 3 test, download the branch snapshot and copy the entire `custom_components/makerworld_creator_stats` folder to `/config/custom_components/makerworld_creator_stats`, replacing the previous integration files. Restart Home Assistant and follow the setup steps for a new installation. See [BETA.md](BETA.md) for upgrade checks and rollback.
+For a manual Beta 4 test, download the branch snapshot and copy the entire `custom_components/makerworld_creator_stats` folder to `/config/custom_components/makerworld_creator_stats`, replacing the previous integration files. Restart Home Assistant and follow the setup steps for a new installation. See [BETA.md](BETA.md) for upgrade checks and rollback.
 
 ## Data and availability
 
 The integration uses undocumented Bambu Lab endpoints for global accounts. API authorization for this project is unconfirmed. Bambu Lab, MakerWorld and Home Assistant have not endorsed the integration. The email address and access token are stored in Home Assistant's local configuration. Keep backups private.
 
-Profile updates normally run every 30–31 minutes. Points and boost requests have separate approximately two-hour schedules, staggered with at most one optional request per profile cycle. The first refresh after setup or reload reads the profile only. Cached optional values can survive failures for up to four hours after their last successful update. HTTP 403, HTTP 429 and Cloudflare challenges can trigger persistent protection pauses. Check the diagnostic timestamps before retrying.
+Profile updates normally run every 30–31 minutes. Points and boost requests have separate approximately two-hour schedules, staggered with at most one optional request per profile cycle. A cold start without an active pause reads the profile only. Reloads during the current profile interval reuse in-memory data. Profile failures use a two-hour retry interval, also during setup. Cached optional values can survive failures for up to four hours after their last successful update. HTTP 403, HTTP 429 and Cloudflare challenges can trigger persistent protection pauses. Check the diagnostic timestamps before retrying.
 
 ## Further reading
 

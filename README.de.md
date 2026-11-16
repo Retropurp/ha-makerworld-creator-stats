@@ -4,9 +4,9 @@
 
 MakerWorld Creator Stats ist eine eigenständige Home-Assistant-Integration für Creator-Statistiken, Punkte, Boosts und geschätzte Prämienwerte.
 
-## Beta 3
+## Beta 4
 
-Dieser Branch bereitet Version 0.4.3-beta3 für HACS und den Home-Assistant-Marketplace vor. Einrichtung, Optionen, Sensornamen und Verbindungsstatus sind auf Deutsch und Englisch verfügbar. Das violette Diagramm-Icon ist ein eigenes Projektmotiv. Home Assistant kann mitgelieferte Symbole benutzerdefinierter Integrationen ab Version 2026.3 anzeigen.
+Beta 4 schützt vor wiederholten Profilabfragen bei Startfehlern und beim Neuladen. Einrichtung, Optionen, Sensornamen und Verbindungsstatus sind auf Deutsch und Englisch verfügbar. Das violette Diagramm-Icon ist ein eigenes Projektmotiv. Home Assistant kann mitgelieferte Symbole benutzerdefinierter Integrationen ab Version 2026.3 anzeigen.
 
 Die 7-, 14- und 30-Tage-Einnahmesensoren bleiben nicht verfügbar. Ihre eindeutigen IDs bleiben erhalten. Die Diagnose zeigt die nächste Profil-, Punkte- und Boost-Aktualisierung, die letzte erfolgreiche Profilabfrage und den API-Verbindungsstatus.
 
@@ -20,7 +20,7 @@ Stand 12. November 2026: Die Integration wurde in der eigenen Home-Assistant-Ins
 
 ## Abfragehäufigkeit und Schutzpausen
 
-Das Creator-Profil wird normalerweise alle 30–31 Minuten aktualisiert. Punkte- und Boost-Details haben jeweils einen eigenen Abfrageabstand von ungefähr zwei Stunden. Pro Profildurchlauf gibt es höchstens eine Zusatzanfrage. Der erste Durchlauf nach dem Laden fragt nur das Profil ab. Rechensensoren verwenden bereits geladene Daten. Zwischengespeicherte Punkte- und Boost-Werte können bei Fehlern bis zu vier Stunden nach der letzten erfolgreichen Zusatzabfrage verfügbar bleiben.
+Das Creator-Profil wird normalerweise alle 30–31 Minuten aktualisiert. Punkte- und Boost-Details haben jeweils einen eigenen Abfrageabstand von ungefähr zwei Stunden. Pro Profildurchlauf gibt es höchstens eine Zusatzanfrage. Beim Kaltstart ohne aktive Pause wird zuerst nur das Profil abgefragt. Beim Neuladen innerhalb des Abfrageintervalls werden vorhandene Daten verwendet. Nach einem Profilfehler gilt auch beim Einrichten eine Wartezeit von zwei Stunden. Rechensensoren verwenden bereits geladene Daten. Zwischengespeicherte Punkte- und Boost-Werte können bei Fehlern bis zu vier Stunden nach der letzten erfolgreichen Zusatzabfrage verfügbar bleiben.
 
 Bei erkannter Cloudflare-Sperre pausieren die Statistikabfragen des betroffenen Kontos zunächst zwei Stunden, bei weiteren gesperrten Versuchen vier, acht und höchstens zwölf Stunden. Bei HTTP 429 beginnt die Pause bei 30 Minuten und verdoppelt sich ebenfalls bis maximal zwölf Stunden. Eine längere gültige Retry-After-Servervorgabe kann die Pause auf höchstens 24 Stunden verlängern. Ein zufälliger Zeitversatz von bis zu einer Minute kommt hinzu, ohne das 24-Stunden-Limit zu überschreiten. Diese Zeiten sind unsere vorsichtige Strategie, keine bestätigten Bambu-Grenzwerte oder Freigabeversprechen.
 
@@ -36,7 +36,7 @@ Eine erkannte Schutzprüfung wird dadurch nicht aufgehoben. Es gibt keine bestä
 
 ## Installation über HACS
 
-In HACS unter **⋮ → Benutzerdefinierte Repositories** die Adresse `https://github.com/Retropurp/ha-makerworld-creator-stats` als Typ **Integration** hinzufügen. **MakerWorld Creator Stats** herunterladen, Home Assistant neu starten und unter **Einstellungen → Geräte & Dienste** hinzufügen. Nach Veröffentlichung eines Beta-3-Pre-Releases in der Versionsauswahl v0.4.3-beta3 wählen. Bis dahin lässt sich der Entwicklungsbranch manuell installieren. In Home Assistant mit Marketplace-Unterstützung führt der [Link zum benutzerdefinierten Repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration) zur Integration.
+In HACS unter **⋮ → Benutzerdefinierte Repositories** die Adresse `https://github.com/Retropurp/ha-makerworld-creator-stats` als Typ **Integration** hinzufügen. **MakerWorld Creator Stats** herunterladen, Home Assistant neu starten und unter **Einstellungen → Geräte & Dienste** hinzufügen. Nach Veröffentlichung eines Beta-3-Pre-Releases in der Versionsauswahl v0.4.3-beta4 wählen. Bis dahin lässt sich der Entwicklungsbranch manuell installieren. In Home Assistant mit Marketplace-Unterstützung führt der [Link zum benutzerdefinierten Repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration) zur Integration.
 
 ## Manuelle Installation
 
@@ -85,7 +85,7 @@ Die Anwendung selbst schreibt keine Anmeldeinformationen, API-Antworten oder Tok
 
 Automatisierte Prüfungen verwenden künstliche API-Antworten für Datenverarbeitung, HTTP-Verhalten und Fehlerfälle. Zusätzlich wurden Anmeldung, Kontostatistiken, Punkte-Gegenwerte, Transaktionsimport und Sensorgruppenauswahl in der eigenen Home-Assistant-Installation erfolgreich erprobt. Das ist ein Praxistest mit einem Konto, keine umfassende Bestätigung für andere Konten, Regionen oder alle Fehlerfälle.
 
-Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen. Die Installation von Beta 3, die Sprachumschaltung, die Anzeige des Icons und das Upgrade einer laufenden Installation sind separat zu prüfen. Siehe [Beta-Testplan](BETA.md).
+Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen. Die Installation von Beta 4, die Sprachumschaltung, die Anzeige des Icons und das Upgrade einer laufenden Installation sind separat zu prüfen. Siehe [Beta-Testplan](BETA.md).
 
 ## Quellen
 
@@ -117,7 +117,7 @@ Sechs zusätzliche USD-Sensoren zeigen den Gegenwert exklusiver Punkte, den USD-
 
 Die USD-Anzeige schneidet nach zwei Nachkommastellen ab, entsprechend dem bereitgestellten Profil-Screenshot. Die Mindestschwelle wird mit dem ungekürzten Betrag geprüft. Fehlende Punkte werden auf drei Nachkommastellen aufgerundet. Diese Berechnung nimmt keine Auszahlung vor.
 
-Die historischen Einnahmesensoren für 7, 14 und 30 Tage bleiben in Beta 3 nicht verfügbar. Die zugehörige Transaktionshistorie wird nicht abgerufen.
+Die historischen Einnahmesensoren für 7, 14 und 30 Tage bleiben in Beta 4 nicht verfügbar. Die zugehörige Transaktionshistorie wird nicht abgerufen.
 
 ## Übersichtliche Sensorgruppen ab 0.4.0
 
@@ -146,7 +146,7 @@ Beim Speichern lädt Home Assistant die Integration neu. Abgewählte Rechengrupp
 | USD-Auszahlung – Aktueller Gegenwert | Vorhandene exklusive Punkte × 0,066 USD |
 | USD-Auszahlung – Beantragbar rechnerisch | Durch Kontostand begrenzter exklusiver Betrag, ab 100 USD und maximal 1.000 USD pro Antrag |
 | USD-Auszahlung – Gesamtverdienst als Gegenwert | Bisher verdiente exklusive Punkte × 0,066 USD |
-| Einnahmen 7, 14 oder 30 Tage | In Beta 3 nicht verfügbar |
+| Einnahmen 7, 14 oder 30 Tage | In Beta 4 nicht verfügbar |
 
 Beispielsweise ergeben 800 Punkte bei 40 EUR Guthaben für 524 Punkte einen anteiligen Kontowert von 61,07 EUR, einen ganzen Gutschein und 40 EUR Guthaben ganzer Gutscheine. Für den folgenden Gutschein fehlen 248 Punkte.
 

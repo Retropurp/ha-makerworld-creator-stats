@@ -1,5 +1,7 @@
 """Coordinated, rate-conscious MakerWorld account polling."""
 
+from asyncio import Lock
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 import logging
 import random
@@ -23,6 +25,7 @@ from .refresh_policy import (
 LOGGER = logging.getLogger(__name__)
 STORAGE_ERRORS = (HomeAssistantError, OSError, ValueError, TypeError, OverflowError, KeyError)
 OPTIONAL_AUTH_DELAY = 6 * 3600
+PROFILE_ERROR_DELAY = 2 * 3600
 
 
 class ScheduledUpdateFailed(UpdateFailed):
@@ -31,6 +34,23 @@ class ScheduledUpdateFailed(UpdateFailed):
     def __init__(self, message, *, retry_after):
         super().__init__(message)
         self.retry_after = retry_after
+
+
+@dataclass
+class AccountRefresh:
+    """Entry-wide refresh state shared across coordinator reloads."""
+
+    lock: Lock = field(default_factory=Lock)
+    data: dict | None = None
+    success_at: float = 0
+    due_at: float = 0
+    retry_at: float = 0
+    error: str = ""
+    extras_loaded: bool = False
+    extras: dict = field(default_factory=lambda: {kind: {} for kind in EXTRA_KEYS})
+    extra_updated: dict = field(default_factory=lambda: {kind: 0.0 for kind in EXTRA_KEYS})
+    extra_due: dict = field(default_factory=lambda: {kind: 0.0 for kind in EXTRA_KEYS})
+    extra_error: dict = field(default_factory=lambda: {kind: "" for kind in EXTRA_KEYS})
 
 
 class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
@@ -51,8 +71,12 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         self.history_persisted = True
         self.reward_options = dict(entry.options)
 
-        shared = hass.data.setdefault(DOMAIN, {}).setdefault("pauses", {})
-        self.pause = shared.setdefault(
+        shared = hass.data.setdefault(DOMAIN, {})
+        refreshes = shared.setdefault("refreshes", {})
+        if entry.entry_id not in refreshes:
+            refreshes[entry.entry_id] = AccountRefresh()
+        self.refresh = refreshes[entry.entry_id]
+        self.pause = shared.setdefault("pauses", {}).setdefault(
             entry.entry_id, {
                 "state": Backoff(), "loaded": False, "persisted": True, "endpoint": "profile",
             },
@@ -60,10 +84,10 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         self.pause_store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.pause")
 
         self.extras_store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.extras")
-        self._extras = {kind: {} for kind in EXTRA_KEYS}
-        self._extra_updated = {kind: 0.0 for kind in EXTRA_KEYS}
-        self._due = {kind: 0.0 for kind in EXTRA_KEYS}
-        self.extra_error = {kind: "" for kind in EXTRA_KEYS}
+        self._extras = self.refresh.extras
+        self._extra_updated = self.refresh.extra_updated
+        self._due = self.refresh.extra_due
+        self.extra_error = self.refresh.extra_error
 
         self.last_profile_success = 0.0
         self.next_profile_at = 0.0
@@ -75,10 +99,18 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         return timedelta(seconds=PROFILE_SECONDS + random.uniform(0, 60))
 
     async def _async_setup(self):
+        async with self.refresh.lock:
+            await self._async_load_refresh_state()
+
+    async def _async_load_refresh_state(self):
         if not self.pause["loaded"]:
             try:
                 saved = await self.pause_store.async_load()
-                self.pause["state"].restore(saved, time.time())
+                now = time.time()
+                self.pause["state"].restore(saved, now)
+                retry_at = saved.get("profile_retry_at") if saved else None
+                if valid_timestamp(retry_at, now + PROFILE_ERROR_DELAY, max_age=PROFILE_ERROR_DELAY):
+                    self.refresh.retry_at = retry_at
                 if saved and saved.get("endpoint") in ("points", "boosts"):
                     self.pause["endpoint"] = saved["endpoint"]
             except STORAGE_ERRORS:
@@ -89,29 +121,31 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             self.pause["loaded"] = True
 
         now = time.time()
-        self._due = first_due(now)
-        try:
-            cache = await self.extras_store.async_load()
-        except STORAGE_ERRORS:
-            cache = None
-        if isinstance(cache, dict) and cache.get("account_id") == self.account_id:
-            for kind, fields in EXTRA_KEYS.items():
-                stored = cache.get(kind)
-                if not isinstance(stored, dict):
-                    continue
-                stamp = stored.get("updated_at")
-                values = stored.get("values")
-                due = stored.get("due_at")
-                valid_due = valid_timestamp(due, now + OPTIONAL_AUTH_DELAY, max_age=OPTIONAL_AUTH_DELAY)
-                if valid_due:
-                    self._due[kind] = due
-                if not valid_timestamp(stamp, now) or not isinstance(values, dict):
-                    continue
-                clean = self._clean_values(kind, values)
-                if clean:
-                    self._extras[kind] = clean
-                    self._extra_updated[kind] = float(stamp)
-                    self._due[kind] = max(due if valid_due else now, float(stamp) + EXTRA_SECONDS)
+        if not self.refresh.extras_loaded:
+            self._due.update(first_due(now))
+            try:
+                cache = await self.extras_store.async_load()
+            except STORAGE_ERRORS:
+                cache = None
+            if isinstance(cache, dict) and cache.get("account_id") == self.account_id:
+                for kind in EXTRA_KEYS:
+                    stored = cache.get(kind)
+                    if not isinstance(stored, dict):
+                        continue
+                    stamp = stored.get("updated_at")
+                    values = stored.get("values")
+                    due = stored.get("due_at")
+                    valid_due = valid_timestamp(due, now + OPTIONAL_AUTH_DELAY, max_age=OPTIONAL_AUTH_DELAY)
+                    if valid_due:
+                        self._due[kind] = due
+                    if not valid_timestamp(stamp, now) or not isinstance(values, dict):
+                        continue
+                    clean = self._clean_values(kind, values)
+                    if clean:
+                        self._extras[kind] = clean
+                        self._extra_updated[kind] = float(stamp)
+                        self._due[kind] = max(due if valid_due else now, float(stamp) + EXTRA_SECONDS)
+            self.refresh.extras_loaded = True
 
         remaining = self.pause["state"].remaining(now)
         if remaining:
@@ -178,12 +212,28 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         await super().async_request_refresh()
 
     async def _async_update_data(self):
+        async with self.refresh.lock:
+            return await self._async_update_account()
+
+    async def _async_update_account(self):
         now = time.time()
+        refresh = self.refresh
+        self.last_profile_success = refresh.success_at
         remaining = self.pause["state"].remaining(now)
         if remaining:
             self.connection_status = "paused"
             self.next_profile_at = self.pause["state"].until
             raise self._pause_failure(remaining)
+        if now < refresh.retry_at:
+            raise self._profile_failure(now)
+        if refresh.data is not None and now < refresh.due_at:
+            self.next_profile_at = refresh.due_at
+            self.update_interval = timedelta(seconds=refresh.due_at - now)
+            failed_detail = next((error for error in self.extra_error.values() if error), "")
+            self.connection_status = "partial" if failed_detail else "success"
+            self.last_error = failed_detail
+            self._first_profile_pending = False
+            return self._profile_with_extras(refresh.data, now)
 
         try:
             raw_profile = await self.api.profile()
@@ -192,6 +242,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             # Validate the profile before recording success or calling an optional endpoint.
             MakerWorldProfile.from_json(raw_profile)
         except AuthError as error:
+            refresh.data = None
             self.connection_status = "auth_required"
             self.last_error = str(error)
             self.next_profile_at = 0
@@ -200,26 +251,21 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             self.last_error = str(error)
             raise await self._async_pause(error, "profile") from None
         except ApiError as error:
-            self.connection_status = "error"
-            self.last_error = str(error)
-            self.update_interval = timedelta(hours=2)
-            self.next_profile_at = time.time() + 2 * 3600
-            raise UpdateFailed(str(error)) from None
+            raise await self._async_profile_failure(str(error)) from None
         except (AttributeError, TypeError, ValueError):
-            self.connection_status = "error"
-            self.last_error = "Unexpected profile format"
-            self.update_interval = timedelta(hours=2)
-            self.next_profile_at = time.time() + 2 * 3600
-            raise UpdateFailed(self.last_error) from None
+            raise await self._async_profile_failure("Unexpected profile format") from None
 
         now = time.time()
-        self.last_profile_success = now
+        refresh.data = raw_profile
+        refresh.success_at = self.last_profile_success = now
+        refresh.retry_at = 0
         self.update_interval = self._profile_interval()
+        refresh.due_at = self.next_profile_at = now + self.update_interval.total_seconds()
         self.connection_status = "success"
         self.last_error = ""
 
-        # First update is profile-only. Restore/cache optional data without
-        # launching a burst of requests on every startup or account reload.
+        # A setup without an in-memory snapshot starts with the profile only.
+        # Reloads with a snapshot do not make a request during setup.
         chosen = None if self._first_profile_pending else due_optional(self._due, now)
         self._first_profile_pending = False
         if chosen is not None:
@@ -232,13 +278,32 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             if self.pause["state"].strikes and self.pause["endpoint"] == "profile":
                 self.pause["state"].reset()
                 await self._save_pause()
-            self.next_profile_at = time.time() + self.update_interval.total_seconds()
+            refresh.due_at = self.next_profile_at = time.time() + self.update_interval.total_seconds()
 
-        now = time.time()
+        return self._profile_with_extras(raw_profile, time.time())
+
+    def _profile_with_extras(self, raw_profile, now):
         return MakerWorldProfile.from_json(
             raw_profile, self._current_extra("points", now),
             self._current_extra("boosts", now),
         )
+
+    async def _async_profile_failure(self, message):
+        refresh = self.refresh
+        refresh.data = None
+        refresh.error = message
+        refresh.retry_at = time.time() + PROFILE_ERROR_DELAY
+        await self._save_pause()
+        return self._profile_failure(time.time())
+
+    def _profile_failure(self, now):
+        refresh = self.refresh
+        self.connection_status = "error"
+        self.last_error = refresh.error or "Waiting to retry the MakerWorld profile"
+        self.next_profile_at = refresh.retry_at
+        remaining = max(0, refresh.retry_at - now)
+        self.update_interval = timedelta(seconds=remaining)
+        return ScheduledUpdateFailed(self.last_error, retry_after=remaining)
 
     async def _refresh_optional(self, kind):
         path = POINTS if kind == "points" else BOOSTS
@@ -282,7 +347,11 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         self._previous_refresh_failed = failed
 
     async def _save_pause(self):
-        payload = {**self.pause["state"].as_dict(), "endpoint": self.pause["endpoint"]}
+        payload = {
+            **self.pause["state"].as_dict(),
+            "endpoint": self.pause["endpoint"],
+            "profile_retry_at": self.refresh.retry_at,
+        }
         try:
             await self.pause_store.async_save(payload)
             # Store can log a write error without raising it to the caller.
