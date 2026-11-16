@@ -132,8 +132,9 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.jitter = self.jitter_patch.start()
         self.addCleanup(self.jitter_patch.stop)
         self.hass = types.SimpleNamespace(data={}, config=types.SimpleNamespace(language="en"))
-        self.entry = types.SimpleNamespace(entry_id="entry", unique_id="42", options={})
+        self.entry = types.SimpleNamespace(entry_id="entry", unique_id="42", options={}, data={})
         self.api = types.SimpleNamespace(
+            token="test-token",
             profile=AsyncMock(return_value={"uid": 42, "name": "Test"}),
             read_stats=AsyncMock(return_value={"totalRegularIncome": 12, "availableTotal": 3}),
             income_history=AsyncMock(return_value=[]),
@@ -184,7 +185,7 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.now += 7201
         await result._async_update_data()
         self.assertEqual(result.pause["state"].strikes, 0)
-        self.assertEqual(result.update_interval.total_seconds(), 1800)
+        self.assertEqual(result.update_interval.total_seconds(), 3600)
         self.assertEqual(Store.data[result.pause_store.key]["until"], 0)
 
     async def test_ordinary_startup_failure_waits_across_reload_and_restart(self):
@@ -219,11 +220,11 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         await reloaded.async_request_refresh()
         self.assertEqual(reloaded.data.name, "Test")
         self.assertEqual(reloaded.last_profile_success, self.now - 60)
-        self.assertEqual(reloaded.next_profile_update, self.now + 1740)
-        self.assertEqual(reloaded.update_interval.total_seconds(), 1740)
+        self.assertEqual(reloaded.next_profile_update, self.now + 3540)
+        self.assertEqual(reloaded.update_interval.total_seconds(), 3540)
         self.api.profile.assert_awaited_once()
         self.api.read_stats.assert_not_awaited()
-        self.now += 1740
+        self.now += 3540
         await reloaded.async_refresh()
         self.assertEqual(self.api.profile.await_count, 2)
         self.api.read_stats.assert_awaited_once_with(coordinator.POINTS)
@@ -263,7 +264,7 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
     async def test_optional_throttle_keeps_profile_and_pauses_every_endpoint(self):
         result = await self.create()
         await result._async_update_data()
-        self.now += 1800
+        self.now += 3600
         self.api.read_stats.side_effect = errors.RateLimitError("Rate limited", retry_after=10000)
         profile = await result._async_update_data()
         self.assertEqual(profile.name, "Test")
@@ -285,34 +286,33 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(self.api.profile.await_count, cycle + 1)
             self.assertLessEqual(self.api.read_stats.await_count - optional_before, 1)
             step = result.update_interval.total_seconds()
-            self.assertIn(step, (1800, 1860))
+            self.assertIn(step, (3600, 3660))
             self.assertEqual(result.next_profile_update, self.now + step)
             await result.async_request_refresh()
             self.assertEqual(self.api.profile.await_count, cycle + 1)
             self.now += step
         self.assertEqual(self.api.read_stats.await_args_list, [
             call(coordinator.POINTS), call(coordinator.BOOSTS),
-            call(coordinator.POINTS), call(coordinator.BOOSTS),
         ])
-        self.assertGreaterEqual(result._due["points"], 1000000 + 1800 + 2 * 7200)
-        self.assertGreaterEqual(result._due["boosts"], 1000000 + 3600 + 2 * 7200)
+        self.assertGreaterEqual(result._due["points"], 1000000 + 3600 + 21600)
+        self.assertGreaterEqual(result._due["boosts"], 1000000 + 7200 + 21600)
 
     async def test_overdue_cache_is_reused_on_restart_and_expires_after_failure(self):
         result = await self.create()
         await result._async_update_data()
-        self.now += 1800
+        self.now += 3600
         self.assertEqual((await result._async_update_data()).points_earned, 12)
         self.now += 7201
         restarted = await self.create(types.SimpleNamespace(data={}))
         self.api.read_stats.reset_mock()
         self.assertEqual((await restarted._async_update_data()).points_earned, 12)
         self.api.read_stats.assert_not_awaited()
-        self.now += 1800
+        self.now += 14400
         self.api.read_stats.side_effect = errors.ApiError("Offline")
         self.assertEqual((await restarted._async_update_data()).points_earned, 12)
         self.assertEqual(restarted.connection_status, "partial")
         due = restarted._due["points"]
-        self.now += 5400
+        self.now += 7201
         again = await self.create(types.SimpleNamespace(data={}))
         self.assertEqual(again._due["points"], due)
         self.assertIsNone((await again._async_update_data()).points_earned)
@@ -321,16 +321,50 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
     async def test_optional_denial_escalates_after_profile_only_restart(self):
         result = await self.create()
         await result._async_update_data()
-        self.now += 1800
+        self.now += 3600
         self.api.read_stats.side_effect = errors.AccessDeniedError("HTTP 403")
         await result._async_update_data()
         self.now += 7201
         restarted = await self.create(types.SimpleNamespace(data={}))
         await restarted._async_update_data()
         self.assertEqual(restarted.pause["state"].strikes, 1)
-        self.now += 1800
+        self.now = restarted._due["points"]
         await restarted._async_update_data()
         self.assertEqual(restarted.pause["state"].remaining(self.now), 14400)
+
+    async def test_private_stats_opt_out_never_calls_restricted_endpoints(self):
+        self.entry.data["private_stats_enabled"] = False
+        result = await self.create()
+        for _ in range(9):
+            await result._async_update_data()
+            self.now += 3600
+        self.api.read_stats.assert_not_awaited()
+        self.assertIsNone(result.next_points_at)
+        self.assertIsNone(result.next_boosts_at)
+        self.assertEqual(result.connection_status, "success")
+
+    async def test_private_401_stops_until_new_token_even_after_restart(self):
+        result = await self.create()
+        await result._async_update_data()
+        self.now += 3600
+        self.api.read_stats.side_effect = errors.AuthError("Token rejected")
+        await result._async_update_data()
+        self.api.read_stats.assert_awaited_once_with(coordinator.POINTS)
+        self.assertIsNone(result.next_points_at)
+        self.now += 21600
+        restarted = await self.create(types.SimpleNamespace(data={}))
+        self.api.read_stats.reset_mock()
+        await restarted._async_update_data()
+        self.api.read_stats.assert_not_awaited()
+        self.assertIsNone(restarted.next_points_at)
+        self.api.token = "new-token"
+        self.api.read_stats.side_effect = None
+        reauthed = await self.create(types.SimpleNamespace(data={}))
+        self.assertIsNotNone(reauthed.next_points_at)
+        await reauthed._async_update_data()
+        self.now += 3600
+        await reauthed._async_update_data()
+        self.api.read_stats.assert_awaited_once_with(coordinator.POINTS)
 
     async def test_diagnostics_update_while_profile_is_unavailable(self):
         result = await self.create()
@@ -367,7 +401,7 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(set(status.extra_state_attributes), {"detail", "punkte_fehler", "boost_fehler"})
         observed = []
         result.listeners.append(lambda: observed.append((status.native_value, timestamp.native_value)))
-        self.now += 1800
+        self.now += 3600
         self.api.profile.side_effect = errors.ApiError("Offline")
         await result.async_refresh()
         self.now += 7200
@@ -384,7 +418,7 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
     async def test_malformed_profile_does_not_trigger_optional_request(self):
         result = await self.create()
         await result._async_update_data()
-        self.now += 1800
+        self.now += 3600
         self.api.profile.return_value = {"uid": 42, "MWCount": "invalid"}
         with self.assertRaises(UpdateFailed):
             await result._async_update_data()
@@ -417,7 +451,7 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
     async def test_rejected_account_stops_updates_until_reauthentication(self):
         result = await self.create()
         await result.async_refresh()
-        self.now += 1800
+        self.now += 3600
         self.api.profile.return_value = {"uid": 99, "name": "Other account"}
         await result.async_refresh()
         self.assertEqual(result.connection_status, "auth_required")

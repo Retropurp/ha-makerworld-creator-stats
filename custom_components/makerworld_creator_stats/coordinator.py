@@ -3,6 +3,7 @@
 from asyncio import Lock
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from hashlib import sha256
 import logging
 import random
 import time
@@ -51,10 +52,11 @@ class AccountRefresh:
     extra_updated: dict = field(default_factory=lambda: {kind: 0.0 for kind in EXTRA_KEYS})
     extra_due: dict = field(default_factory=lambda: {kind: 0.0 for kind in EXTRA_KEYS})
     extra_error: dict = field(default_factory=lambda: {kind: "" for kind in EXTRA_KEYS})
+    rejected_private: dict = field(default_factory=dict)
 
 
 class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
-    """One creator profile every 30m, up to one optional GET per refresh."""
+    """One creator profile per hour, at most one optional GET per refresh."""
 
     def __init__(self, hass, entry, api):
         super().__init__(
@@ -62,6 +64,13 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             update_interval=self._profile_interval(),
         )
         self.api = api
+        # An opaque token fingerprint (never the token itself) ties 401 refusals
+        # to a specific login, including across HA restarts.
+        self._token_fingerprint = sha256(api.token.encode("utf-8")).hexdigest()
+        # Legacy entries retain private stats; new entries require opt-in.
+        self._private_stats_enabled = bool(entry.options.get(
+            "private_stats_enabled", entry.data.get("private_stats_enabled", True)
+        ))
         self._previous_refresh_failed = False
         self._first_profile_pending = True
         self.account_id = entry.unique_id
@@ -88,6 +97,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         self._extra_updated = self.refresh.extra_updated
         self._due = self.refresh.extra_due
         self.extra_error = self.refresh.extra_error
+        self._rejected_private = self.refresh.rejected_private
 
         self.last_profile_success = 0.0
         self.next_profile_at = 0.0
@@ -128,6 +138,11 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             except STORAGE_ERRORS:
                 cache = None
             if isinstance(cache, dict) and cache.get("account_id") == self.account_id:
+                rejected = cache.get("rejected_private", {})
+                if isinstance(rejected, dict):
+                    for kind in EXTRA_KEYS:
+                        if rejected.get(kind) == self._token_fingerprint:
+                            self._rejected_private[kind] = self._token_fingerprint
                 for kind in EXTRA_KEYS:
                     stored = cache.get(kind)
                     if not isinstance(stored, dict):
@@ -147,6 +162,14 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
                         self._due[kind] = max(due if valid_due else now, float(stamp) + EXTRA_SECONDS)
             self.refresh.extras_loaded = True
 
+        for kind in EXTRA_KEYS:
+            if self._rejected_private.get(kind) != self._token_fingerprint:
+                self._rejected_private.pop(kind, None)
+                if not self._due.get(kind):
+                    self._due[kind] = first_due(now)[kind]
+            if not self._private_stats_enabled or kind in self._rejected_private:
+                self._due[kind] = 0
+
         remaining = self.pause["state"].remaining(now)
         if remaining:
             self.connection_status = "paused"
@@ -165,7 +188,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         return clean
 
     async def _save_extras(self):
-        payload = {"account_id": self.account_id}
+        payload = {"account_id": self.account_id, "rejected_private": self._rejected_private.copy()}
         for kind in EXTRA_KEYS:
             payload[kind] = {
                 "updated_at": self._extra_updated[kind],
@@ -178,6 +201,8 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             LOGGER.warning("Could not persist MakerWorld optional-statistics cache")
 
     def _current_extra(self, kind, now):
+        if not self._private_stats_enabled:
+            return {}
         if valid_timestamp(self._extra_updated[kind], now, max_age=MAX_EXTRA_AGE):
             return self._extras[kind]
         return {}
@@ -191,6 +216,8 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         return self._next_optional_time("boosts")
 
     def _next_optional_time(self, kind):
+        if not self._private_stats_enabled or kind in self._rejected_private:
+            return None
         due = self._due[kind]
         if not due:
             return None
@@ -306,6 +333,8 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         return ScheduledUpdateFailed(self.last_error, retry_after=remaining)
 
     async def _refresh_optional(self, kind):
+        if not self._private_stats_enabled or kind in self._rejected_private:
+            return
         path = POINTS if kind == "points" else BOOSTS
         now = time.time()
         self._due[kind] = now + EXTRA_SECONDS
@@ -315,8 +344,9 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             if not clean:
                 raise ApiError("Optional MakerWorld statistics have no recognized counters")
         except AuthError:
-            self.extra_error[kind] = "Account token rejected for optional statistics"
-            self._due[kind] = now + OPTIONAL_AUTH_DELAY
+            self.extra_error[kind] = "Account token rejected; endpoint disabled until reauthentication"
+            self._rejected_private[kind] = self._token_fingerprint
+            self._due[kind] = 0
             self.connection_status = "partial"
             self.last_error = self.extra_error[kind]
         except (CloudflareError, RateLimitError, AccessDeniedError) as error:
