@@ -1,10 +1,6 @@
 """Sensor groups selected by the user in the options dialog."""
 
-VIEWS = {
-    "both": "Gutscheine und USD-Auszahlung",
-    "gifts": "Nur Guthaben-Gutscheine",
-    "cash": "Nur direkte USD-Auszahlung",
-}
+VIEWS = ('both', 'gifts', 'cash')
 
 
 def sensor_group(key):

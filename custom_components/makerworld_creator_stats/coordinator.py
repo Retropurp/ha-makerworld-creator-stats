@@ -47,7 +47,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         self.account_id = entry.unique_id
         self.income_events = None
         self.history_synced_at = 0
-        self.history_error = "Historical transaction import disabled in beta 2"
+        self.history_error = "Historical transaction import disabled in this beta"
         self.history_persisted = True
         self.reward_options = dict(entry.options)
 
@@ -83,7 +83,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
                     self.pause["endpoint"] = saved["endpoint"]
             except STORAGE_ERRORS:
                 raise ScheduledUpdateFailed(
-                    "Gespeicherte Schutzpause nicht lesbar; keine Anfrage wird gestartet.",
+                    "Could not read saved protection pause. Request skipped.",
                     retry_after=3600,
                 ) from None
             self.pause["loaded"] = True
@@ -297,13 +297,13 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         until = datetime.fromtimestamp(self.pause["state"].until, timezone.utc)
         kinds = {
             "cloudflare": "Cloudflare",
-            "throttled": "Anfragebegrenzung",
-            "denied": "Zugriff abgewiesen",
+            "throttled": "Rate limit",
+            "denied": "Access denied",
         }
-        label = kinds.get(self.pause["state"].reason, "Anfragepause")
-        message = f"{label}: Keine Anfragen bis {until:%d.%m.%Y %H:%M} UTC."
+        label = kinds.get(self.pause["state"].reason, "Protection pause")
+        message = f"{label}: Requests paused until {until:%Y-%m-%d %H:%M} UTC."
         if not self.pause["persisted"]:
-            message += " Schutzpause konnte nicht gespeichert werden."
+            message += " Could not save the protection pause."
         if detail:
             message += f" {detail}"
         return ScheduledUpdateFailed(message, retry_after=remaining)

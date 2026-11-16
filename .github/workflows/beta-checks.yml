@@ -1,21 +1,24 @@
-name: Beta Python checks
+name: Validate MakerWorld Creator Stats
 
 on:
   push:
-    branches:
-      - "beta/**"
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   hassfest:
+    name: Hassfest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: home-assistant/actions/hassfest@f4ca6f671bd429efb108c0f2fa0ae8af0215986c
   hacs:
+    name: HACS / Marketplace
     runs-on: ubuntu-latest
     steps:
       - uses: hacs/action@d556e736723344f83838d08488c983a15381059a
@@ -23,13 +26,16 @@ jobs:
           category: integration
           comment: "false"
   check:
+    name: Offline regression tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
       - name: Compile Python integration
         run: python -m compileall -q custom_components/makerworld_creator_stats
-      - name: Offline scheduling policy tests
+      - name: Run regression tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v

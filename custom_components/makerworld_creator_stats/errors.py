@@ -48,13 +48,13 @@ def classify_denial(status, headers, body, endpoint):
     retry_after = retry_after_seconds(headers.get("retry-after"), time.time())
     if status == 429:
         return RateLimitError(
-            f"{endpoint}: Anfragebegrenzung (HTTP 429). Später erneut versuchen.",
+            f"{endpoint}: Rate limited (HTTP 429). Try again later.",
             retry_after=retry_after,
         )
     if cloudflare:
         return CloudflareError(
-            f"{endpoint}: Cloudflare-Schutzprüfung oder Zugriffssperre erkannt "
-            f"(HTTP {status}). Später erneut versuchen; ein neues Passwort ist dadurch nicht erforderlich.",
+            f"{endpoint}: Cloudflare challenge or block detected "
+            f"(HTTP {status}). Try again later. A password change is unnecessary.",
             retry_after=retry_after,
         )
     try:
@@ -66,10 +66,10 @@ def classify_denial(status, headers, body, endpoint):
         or data.get("error") == "csrf error: missing_cookie"
     ):
         return AccessDeniedError(
-            f"{endpoint}: Bambu verlangt ein CSRF-Cookie (HTTP 403).", retry_after=retry_after,
+            f"{endpoint}: Bambu Lab requires a CSRF cookie (HTTP 403).", retry_after=retry_after,
         )
     return AccessDeniedError(
-        f"{endpoint}: Zugriff von Bambu abgewiesen (HTTP 403). "
-        "Ursache nicht eindeutig; keine bestätigte Cloudflare- oder Anmeldediagnose.",
+        f"{endpoint}: Access denied by Bambu Lab (HTTP 403). "
+        "Cause unconfirmed.",
         retry_after=retry_after,
     )

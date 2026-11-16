@@ -1,6 +1,7 @@
 """Password-free setup and reauthentication through an email code."""
 
 from decimal import Decimal
+import logging
 
 import voluptuous as vol
 
@@ -11,8 +12,24 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import ApiError, AuthError, CodeError, MakerWorldApi
 from .const import DOMAIN
+from .errors import AccessDeniedError, CloudflareError, RateLimitError
 from .rewards import BASES, PRESETS, REGIONS, number
 from .presentation import VIEWS
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+def _connection_error(error):
+    """Keep sanitized technical details in the log and localize the form error."""
+    LOGGER.debug("MakerWorld sign-in request failed: %s", error)
+    if isinstance(error, CloudflareError):
+        return "cloudflare"
+    if isinstance(error, RateLimitError):
+        return "rate_limited"
+    if isinstance(error, AccessDeniedError):
+        return "access_denied"
+    return "cannot_connect"
 
 
 class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -29,7 +46,6 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         errors = {}
-        detail = ""
         if user_input is not None:
             email = user_input["email"].strip()
             if "@" not in email or len(email) > 254:
@@ -40,27 +56,23 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 try:
                     await self._api.request_code(email)
                 except ApiError as error:
-                    detail = str(error)
-                    errors["base"] = "cannot_connect"
+                    errors["base"] = _connection_error(error)
                 else:
                     return await self.async_step_code()
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({vol.Required("email", default=self._email): str}),
             errors=errors,
-            description_placeholders={"detail": detail},
         )
 
     async def async_step_code(self, user_input=None):
         errors = {}
-        detail = ""
         if user_input is not None:
             if user_input.get("resend", False):
                 try:
                     await self._api.request_code(self._email)
                 except ApiError as error:
-                    detail = str(error)
-                    errors["base"] = "cannot_connect"
+                    errors["base"] = _connection_error(error)
             else:
                 try:
                     token = await self._api.login(self._email, user_input["code"].strip())
@@ -68,8 +80,7 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 except (CodeError, AuthError):
                     errors["base"] = "invalid_code"
                 except ApiError as error:
-                    detail = str(error)
-                    errors["base"] = "cannot_connect"
+                    errors["base"] = _connection_error(error)
                 else:
                     uid = str(profile["uid"])
                     if self.source == config_entries.SOURCE_REAUTH:
@@ -94,7 +105,6 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("resend", default=False): bool,
             }),
             errors=errors,
-            description_placeholders={"detail": detail},
         )
 
     async def async_step_reauth(self, entry_data):
@@ -119,7 +129,8 @@ class RewardsOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Required("sensor_view", default=self._settings.get("sensor_view", "both")): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=[{"value": key, "label": label} for key, label in VIEWS.items()],
+                        options=list(VIEWS),
+                        translation_key="sensor_view",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
@@ -142,13 +153,15 @@ class RewardsOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Required("shop_region", default=self._settings.get("shop_region", "unset")): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=[{"value": key, "label": label} for key, label in REGIONS.items()],
+                        options=list(REGIONS),
+                        translation_key="shop_region",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
                 vol.Required("points_basis", default=self._settings.get("points_basis", "regular")): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=[{"value": key, "label": label} for key, label in BASES.items()],
+                        options=list(BASES),
+                        translation_key="points_basis",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),

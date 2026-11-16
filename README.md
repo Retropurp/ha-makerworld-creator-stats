@@ -1,54 +1,43 @@
 # MakerWorld Creator Stats
 
+![Unofficial MakerWorld Creator Stats icon](custom_components/makerworld_creator_stats/brand/icon.png)
+
 [Deutsch](README.de.md)
 
-MakerWorld Creator Stats is an independent Home Assistant community integration that reads the signed-in creator's MakerWorld statistics and calculates reward estimates locally. The experimental beta branch is version 0.4.3-beta2. The stable `main` branch remains at 0.4.2.
+MakerWorld Creator Stats is an independent Home Assistant integration for the signed-in creator's statistics, point balances, and boosts. It estimates gift card credit and USD cash rewards in Home Assistant using the data already fetched.
 
-## Experimental beta 0.4.3-beta2
+## Beta 3
 
-This branch tests an unambiguous, versioned client identity:
-`ha-makerworld-creator-stats/v0.4.3-beta2`. Only the authenticated creator
-profile is polled (normally once every 30–31 minutes). Point-ledger and boost
-token requests are scheduled independently approximately every two hours and
-staggered (no more than one optional call per profile refresh). Paginated
-transaction-history imports stay disabled, so rolling income sensors are
-unavailable. Diagnostic timestamps show upcoming updates and the API status. The existing login flow can make separate
-requests during explicit account setup or reauthentication.
+This development branch prepares version 0.4.3-beta3 for HACS and the Home Assistant Marketplace. It includes English and German setup, options, sensor names, and status labels. The purple chart icon is project artwork. Home Assistant 2026.3 and later can display branding packaged with a custom integration.
 
-This does **not** grant API permission or prove that Bambu Lab accepts the
-requests. Do not repeatedly reload after HTTP 403 or rate limiting.
-See [BETA.md](BETA.md) for installation and a controlled test.
-Sections below describe the stable feature set; availability is reduced
-for this beta.
+| Area | What you can see |
+| --- | --- |
+| Creator profile | Published models, model and print-profile downloads and prints, likes, collections, followers, following and level |
+| Points and boosts | Regular and exclusive balances, lifetime points earned and spent, and boost activity |
+| Reward estimates | Gift card equivalents and estimated USD cash rewards, based on your selected terms |
+| Diagnostics | Last successful profile update, next scheduled updates, and API connection status |
 
-## Project status
+Rolling 7-, 14-, and 30-day income sensors stay unavailable in this beta. Their entities are retained for existing installations. Reward estimates are calculated locally. Redemption, eligibility and payouts are handled by MakerWorld.
 
-The integration is unofficial. Bambu Lab, MakerWorld, and Home Assistant have not endorsed it. It uses undocumented Bambu Lab endpoints. On 12 November 2026, the maintainer contacted Bambu Lab to ask whether a supported, authorized API is available for this use. Authorization is pending.
+## Install and configure
 
-The maintainer previously tested sign-in, account statistics, transaction history, and reward estimates on one real account. Subsequent requests for the authenticated account profile returned HTTP 403. The cause of the denial remains unconfirmed. The maintainer has paused polling on the test installation while awaiting clarification.
+1. Back up your Home Assistant configuration. For an upgrade, keep the existing integration entry.
+2. **HACS:** In **⋮ → Custom repositories**, add `https://github.com/Retropurp/ha-makerworld-creator-stats` as **Integration** and download it. The HACS version selector shows Beta 3 once a corresponding GitHub prerelease exists. Enable prereleases if your HACS version offers the option.
+3. **Home Assistant Marketplace:** Use the [custom repository link](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration). The Marketplace checks the repository and version it installs. For an unreleased branch build, use the manual steps below.
+4. Restart Home Assistant. For a new installation, go to **Settings → Devices & services → Add integration → MakerWorld Creator Stats**. Enter the email address of your global Bambu account and the one-time code delivered by Bambu Lab.
+5. Use **Configure** to select reward sensor groups, your shop region, and gift card terms. Deselecting a reward group removes its entities from the registry. Dashboards and automations that use those entities may need updating.
 
-## What it shows
+For a manual Beta 3 test, download the branch snapshot and copy the entire `custom_components/makerworld_creator_stats` folder to `/config/custom_components/makerworld_creator_stats`, replacing the previous integration files. Restart Home Assistant and follow the setup steps for a new installation. See [BETA.md](BETA.md) for upgrade checks and rollback.
 
-- **Creator statistics:** published models, downloads and prints for models and print profiles, likes, collections, followers, and creator level.
-- **Account statistics:** regular and exclusive points, points earned and spent, and boost activity.
-- **Local estimates:** gift-card equivalents, estimated USD reward equivalents, and points earned over 7, 14, and 30 days where transaction data is available.
+## Data and availability
 
-Reward values are estimates based on the configured rates and available data. The integration reads statistics only. It has no features for controlling printers, redeeming rewards, or initiating payouts.
+The integration uses undocumented Bambu Lab endpoints for global accounts. API authorization for this project is unconfirmed. Bambu Lab, MakerWorld and Home Assistant have not endorsed the integration. The email address and access token are stored in Home Assistant's local configuration. Keep backups private.
 
-## Data access
-
-Home Assistant uses the Bambu account email and a one-time code to obtain a token. Home Assistant stores the email and token in its local configuration. Keep configuration backups private. This version supports global Bambu accounts. China-region accounts require a separate implementation.
-
-The integration normally refreshes account statistics about every 30 minutes and imports transaction history at most every six hours. It backs off when it detects a Cloudflare challenge or rate limiting. Calculated sensors reuse fetched data. When requests fail, affected sensors report unavailable. Avoid repeatedly reloading the integration or requesting new sign-in codes after an access denial.
-
-## Installation
-
-The current version can be installed as a **custom HACS repository**. In HACS, open **⋮ → Custom repositories**, add `https://github.com/Retropurp/ha-makerworld-creator-stats` with type **Integration**, and download **MakerWorld Creator Stats**. Restart Home Assistant, then open **Settings → Devices & services → Add integration**. Setup depends on successful access to the Bambu account profile.
-
-For manual installation, copy `custom_components/makerworld_creator_stats` into Home Assistant's `/config/custom_components/`, restart Home Assistant, and add the integration from **Devices & services**.
+Profile updates normally run every 30–31 minutes. Points and boost requests have separate approximately two-hour schedules, staggered with at most one optional request per profile cycle. The first refresh after setup or reload reads the profile only. Cached optional values can survive failures for up to four hours after their last successful update. HTTP 403, HTTP 429 and Cloudflare challenges can trigger persistent protection pauses. Check the diagnostic timestamps before retrying.
 
 ## Further reading
 
+- [Beta test checklist and rollback](BETA.md)
 - [Detailed German documentation](README.de.md)
 - [Reward values and regional examples](docs/forum-findings-and-reward-values.md)
 - [Third-party attribution](THIRD_PARTY.md)

@@ -90,6 +90,7 @@ modules = {name: types.ModuleType(name) for name in (
     "homeassistant", "homeassistant.core", "homeassistant.exceptions", "homeassistant.helpers",
     "homeassistant.helpers.update_coordinator", "homeassistant.helpers.storage",
     "homeassistant.helpers.entity", "homeassistant.helpers.entity_registry",
+    "homeassistant.helpers.translation",
     "homeassistant.components", "homeassistant.components.sensor", "aiohttp",
 )}
 modules["homeassistant.core"].callback = lambda fn: fn
@@ -104,10 +105,11 @@ modules["homeassistant.helpers.entity"].DeviceInfo = dict
 registry = modules["homeassistant.helpers.entity_registry"]
 registry.async_get = lambda hass: None
 registry.async_entries_for_config_entry = lambda registry, entry_id: ()
+modules["homeassistant.helpers.translation"].async_get_translations = AsyncMock(return_value={})
 sensor_module = modules["homeassistant.components.sensor"]
 sensor_module.SensorEntity = object
 sensor_module.SensorEntityDescription = types.SimpleNamespace
-sensor_module.SensorDeviceClass = types.SimpleNamespace(TIMESTAMP="timestamp")
+sensor_module.SensorDeviceClass = types.SimpleNamespace(TIMESTAMP="timestamp", ENUM="enum")
 sensor_module.SensorStateClass = types.SimpleNamespace(MEASUREMENT="measurement")
 modules["aiohttp"].ClientError = type("ClientError", (Exception,), {})
 modules["aiohttp"].ClientSession = object
@@ -128,7 +130,7 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.jitter_patch = patch.object(coordinator.random, "uniform", return_value=0)
         self.jitter = self.jitter_patch.start()
         self.addCleanup(self.jitter_patch.stop)
-        self.hass = types.SimpleNamespace(data={})
+        self.hass = types.SimpleNamespace(data={}, config=types.SimpleNamespace(language="en"))
         self.entry = types.SimpleNamespace(entry_id="entry", unique_id="42", options={})
         self.api = types.SimpleNamespace(
             profile=AsyncMock(return_value={"uid": 42, "name": "Test"}),
@@ -267,12 +269,28 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("42_design_downloads", by_id)
         self.assertIn("42_points", by_id)
         self.assertIn("42_boost_tokens", by_id)
-        self.assertIsNone(by_id["42_income_points_7d"].native_value)
+        expected = {
+            key for key, *_ in (*sensor.SENSORS, *sensor.DIAGNOSTIC_SENSORS,
+                                *sensor.REWARD_SENSORS, *sensor.CASH_SENSORS)
+        }
+        expected.update(
+            f"income_{kind}_{days}d" for kind in ("points", "money", "cash") for days in (7, 14, 30)
+        )
+        self.assertEqual(set(by_id), {f"42_{key}" for key in expected})
+        for key in expected:
+            entity = by_id[f"42_{key}"]
+            self.assertEqual(entity.entity_description.translation_key, key)
+            if key.startswith("income_"):
+                self.assertIsNone(entity.native_value)
+                self.assertFalse(entity.available)
         status = by_id["42_connection_status"]
         timestamp = by_id["42_next_profile_update"]
         last_success = by_id["42_last_profile_success"]
         self.assertEqual(timestamp.entity_description.device_class, "timestamp")
         self.assertEqual(status._attr_entity_category, "diagnostic")
+        self.assertEqual(status.entity_description.device_class, "enum")
+        self.assertEqual(tuple(status.entity_description.options), sensor.CONNECTION_STATES)
+        self.assertEqual(set(status.extra_state_attributes), {"detail", "punkte_fehler", "boost_fehler"})
         observed = []
         result.listeners.append(lambda: observed.append((status.native_value, timestamp.native_value)))
         self.now += 1800
@@ -312,7 +330,7 @@ class PauseCoordinatorTests(unittest.IsolatedAsyncioTestCase):
         await self.deny(result)
         with self.assertRaises(UpdateFailed) as caught:
             await result._async_update_data()
-        self.assertIn("konnte nicht gespeichert werden", str(caught.exception))
+        self.assertIn("Could not save the protection pause", str(caught.exception))
         self.api.profile.assert_not_awaited()
 
     async def test_store_that_swallows_write_error_still_keeps_pause(self):

@@ -1,0 +1,460 @@
+{
+  "title": "MakerWorld Creator Stats",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to MakerWorld",
+        "description": "Enter the email address associated with your Bambu Lab account. Bambu Lab will send a one-time verification code. Only global accounts on api.bambulab.com are currently supported.",
+        "data": {
+          "email": "Email address"
+        }
+      },
+      "code": {
+        "title": "Enter verification code",
+        "description": "Enter the code from the Bambu Lab email. To request another code, select the checkbox. Home Assistant stores the resulting access token in its local configuration.",
+        "data": {
+          "code": "Verification code",
+          "resend": "Request a new code"
+        }
+      }
+    },
+    "error": {
+      "invalid_email": "Enter a valid email address.",
+      "cannot_connect": "Could not complete the Bambu Lab request. See the Home Assistant log for details.",
+      "invalid_code": "The code is invalid or has expired. Check the code or request a new one.",
+      "access_denied": "Bambu Lab denied the request. Wait before trying again.",
+      "rate_limited": "Bambu Lab is limiting requests. Wait before trying again.",
+      "cloudflare": "Cloudflare challenged or blocked the request. Wait before trying again."
+    },
+    "abort": {
+      "already_configured": "This MakerWorld account is already configured.",
+      "wrong_account": "Sign in with the same Bambu Lab account used for this integration.",
+      "reauth_successful": "Authentication updated successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Select sensor groups",
+        "description": "Gift card sensors estimate Bambu store credit. USD cash reward sensors use exclusive points and a USD 100 minimum. Rolling income sensors are unavailable in this beta. Home Assistant removes deselected groups from the entity registry. Update dashboards and automations that use those entities. Account statistics remain available.",
+        "data": {
+          "sensor_view": "Calculated sensor groups"
+        }
+      },
+      "shop": {
+        "title": "Configure gift card estimates",
+        "description": "Select the Bambu Lab store region and the points to include in the estimate. The combined basis uses regular and exclusive points for gift cards; USD cash rewards always use exclusive points. The EU offer of EUR 40 for 524 points was verified by the project author on 10 November 2026. Other regional presets are experimental.",
+        "data": {
+          "shop_region": "Store region",
+          "points_basis": "Points included in estimates"
+        }
+      },
+      "terms": {
+        "title": "Review gift card terms",
+        "description": "Check the current offer in your own Bambu Lab point store. The EU example is EUR 40 for 524 points. Use a period as the decimal separator. Partial values are estimates; whole gift cards are counted by rounding down. This integration does not verify redemption eligibility or store availability.",
+        "data": {
+          "currency": "Currency (ISO code)",
+          "card_value": "Value per gift card",
+          "card_points": "Points per gift card"
+        }
+      }
+    },
+    "error": {
+      "invalid_currency": "Enter a three-letter currency code, such as EUR or USD.",
+      "invalid_amount": "Enter a number from 0.000001 to 1000000000000 using a period as the decimal separator."
+    }
+  },
+  "selector": {
+    "sensor_view": {
+      "options": {
+        "both": "Gift cards and USD cash rewards",
+        "gifts": "Gift cards only",
+        "cash": "USD cash rewards only"
+      }
+    },
+    "shop_region": {
+      "options": {
+        "unset": "Select a store",
+        "eu": "European Union · EUR · 40 / 524 points · author-verified",
+        "us": "United States · USD · experimental",
+        "uk": "United Kingdom · GBP · experimental",
+        "ca": "Canada · CAD · experimental",
+        "au": "Australia · AUD · experimental",
+        "jp": "Japan · JPY · experimental",
+        "asia": "Asia (forum-reported) · USD · experimental; verify currency",
+        "kr": "South Korea · KRW · experimental",
+        "cn": "China · no verified gift card offer",
+        "custom": "Custom offer"
+      }
+    },
+    "points_basis": {
+      "options": {
+        "regular": "Regular points only",
+        "combined": "Regular and exclusive points"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "design_downloads": {
+        "name": "Model downloads"
+      },
+      "instance_downloads": {
+        "name": "Print profile downloads"
+      },
+      "total_downloads": {
+        "name": "Combined downloads"
+      },
+      "design_prints": {
+        "name": "Model prints"
+      },
+      "instance_prints": {
+        "name": "Print profile prints"
+      },
+      "total_prints": {
+        "name": "Combined prints"
+      },
+      "designs": {
+        "name": "Published models"
+      },
+      "likes": {
+        "name": "Likes"
+      },
+      "collections": {
+        "name": "Collections"
+      },
+      "followers": {
+        "name": "Followers"
+      },
+      "following": {
+        "name": "Following"
+      },
+      "level": {
+        "name": "Level"
+      },
+      "points": {
+        "name": "Total point balance",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "points_regular": {
+        "name": "Regular point balance",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "points_exclusive": {
+        "name": "Exclusive point balance",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "points_earned": {
+        "name": "Regular points earned (lifetime)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "points_spent": {
+        "name": "Regular points spent (lifetime)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "points_earned_exclusive": {
+        "name": "Exclusive points earned (lifetime)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "points_spent_exclusive": {
+        "name": "Exclusive points spent (lifetime)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "points_income_total": {
+        "name": "Total points earned (lifetime)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "points_expense_total": {
+        "name": "Total points spent (lifetime)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "boosts_received": {
+        "name": "Boosts received"
+      },
+      "boost_tokens": {
+        "name": "Available boost tokens"
+      },
+      "boosts_used": {
+        "name": "Boost tokens used"
+      },
+      "boosts_expired": {
+        "name": "Boost tokens expired"
+      },
+      "reward_balance_value": {
+        "name": "Gift cards: estimated balance value",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "reward_earned_value": {
+        "name": "Gift cards: estimated lifetime earnings",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "reward_cards": {
+        "name": "Gift cards: whole cards affordable",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "reward_credit": {
+        "name": "Gift cards: value of whole cards",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "reward_missing": {
+        "name": "Gift cards: points to next card",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        },
+        "unit_of_measurement": "points"
+      },
+      "reward_progress": {
+        "name": "Gift cards: progress to next card",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "cash_balance_value": {
+        "name": "USD cash rewards: current estimated value",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "cash_earned_value": {
+        "name": "USD cash rewards: estimated lifetime earnings",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "cash_claimable": {
+        "name": "USD cash rewards: estimated claimable amount",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "cash_missing_usd": {
+        "name": "USD cash rewards: amount to minimum",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "cash_missing_points": {
+        "name": "USD cash rewards: points to minimum",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        },
+        "unit_of_measurement": "points"
+      },
+      "cash_progress": {
+        "name": "USD cash rewards: progress to minimum",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "income_points_7d": {
+        "name": "Points earned (7 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        },
+        "unit_of_measurement": "points"
+      },
+      "income_money_7d": {
+        "name": "Gift card earnings estimate (7 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "income_cash_7d": {
+        "name": "USD cash earnings estimate (7 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "income_points_14d": {
+        "name": "Points earned (14 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        },
+        "unit_of_measurement": "points"
+      },
+      "income_money_14d": {
+        "name": "Gift card earnings estimate (14 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "income_cash_14d": {
+        "name": "USD cash earnings estimate (14 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "income_points_30d": {
+        "name": "Points earned (30 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        },
+        "unit_of_measurement": "points"
+      },
+      "income_money_30d": {
+        "name": "Gift card earnings estimate (30 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "income_cash_30d": {
+        "name": "USD cash earnings estimate (30 days)",
+        "state_attributes": {
+          "beschreibung": {
+            "name": "Description"
+          }
+        }
+      },
+      "next_profile_update": {
+        "name": "Next profile update"
+      },
+      "next_points_at": {
+        "name": "Next points update"
+      },
+      "next_boosts_at": {
+        "name": "Next boost update"
+      },
+      "last_profile_success": {
+        "name": "Last successful profile update"
+      },
+      "connection_status": {
+        "name": "API connection status",
+        "state": {
+          "initializing": "Initializing",
+          "success": "Up to date",
+          "partial": "Partially updated",
+          "paused": "Protection pause",
+          "error": "Update failed",
+          "auth_required": "Sign-in required"
+        },
+        "state_attributes": {
+          "detail": {
+            "name": "Diagnostic detail"
+          },
+          "punkte_fehler": {
+            "name": "Points update error"
+          },
+          "boost_fehler": {
+            "name": "Boost update error"
+          }
+        }
+      }
+    }
+  },
+  "common": {
+    "points_description": "Current total MakerWorld point balance after spending.",
+    "points_regular_description": "Current regular point balance.",
+    "points_exclusive_description": "Current exclusive point balance. The USD cash reward group shows the estimated value and payout thresholds.",
+    "points_earned_description": "Lifetime regular points credited. Spending does not reduce this total.",
+    "points_spent_description": "Lifetime regular points spent.",
+    "points_earned_exclusive_description": "Lifetime exclusive points credited.",
+    "points_spent_exclusive_description": "Lifetime exclusive points spent.",
+    "points_income_total_description": "Lifetime regular and exclusive points credited.",
+    "points_expense_total_description": "Lifetime regular and exclusive points spent.",
+    "reward_balance_value_description": "Proportional gift card value of the selected point balance at the configured rate.",
+    "reward_earned_value_description": "Lifetime points earned on the selected basis, converted at the current gift card rate, including points already spent.",
+    "reward_cards_description": "Number of whole gift cards the current balance could fund.",
+    "reward_credit_description": "Total credit from whole gift cards the current balance could fund.",
+    "reward_missing_description": "Points needed for one more whole gift card. At an exact threshold, the count starts again for the next card.",
+    "reward_progress_description": "Progress toward the next whole gift card. It resets to zero at each threshold.",
+    "cash_balance_value_description": "Current exclusive points multiplied by USD 0.066. This estimate can be below the USD 100 minimum.",
+    "cash_earned_value_description": "Lifetime exclusive points earned multiplied by USD 0.066, including points already spent.",
+    "cash_claimable_description": "Estimated claim based on available exclusive points, capped by the total balance. Claims below USD 100 show zero. Each request is capped at USD 1,000 and subject to MakerWorld review.",
+    "cash_missing_usd_description": "Estimated amount needed to reach USD 100, taking the total point balance into account.",
+    "cash_missing_points_description": "Additional points needed to reach USD 100, rounded up to three decimal places.",
+    "cash_progress_description": "Progress toward the USD 100 minimum, taking the total point balance into account. Capped at 100 percent.",
+    "income_points_7d_description": "Rolling transaction history is disabled in this beta.",
+    "income_money_7d_description": "Rolling transaction history is disabled in this beta.",
+    "income_cash_7d_description": "Rolling transaction history is disabled in this beta.",
+    "income_points_14d_description": "Rolling transaction history is disabled in this beta.",
+    "income_money_14d_description": "Rolling transaction history is disabled in this beta.",
+    "income_cash_14d_description": "Rolling transaction history is disabled in this beta.",
+    "income_points_30d_description": "Rolling transaction history is disabled in this beta.",
+    "income_money_30d_description": "Rolling transaction history is disabled in this beta.",
+    "income_cash_30d_description": "Rolling transaction history is disabled in this beta."
+  }
+}

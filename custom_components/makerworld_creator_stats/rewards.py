@@ -15,39 +15,27 @@ PRESETS = {
     "asia": ("USD", 40, 490),
     "kr": ("KRW", 58000, 490),
 }
-REGIONS = {
-    "unset": "Bitte Shop wählen",
-    "eu": "EU · EUR · 40 € / 524 Punkte · bestätigt",
-    "us": "USA · USD · experimentell",
-    "uk": "Vereinigtes Königreich · GBP · experimentell",
-    "ca": "Kanada · CAD · experimentell",
-    "au": "Australien · AUD · experimentell",
-    "jp": "Japan · JPY · experimentell",
-    "asia": "ASIA laut Forum · USD · experimentell, Währung prüfen",
-    "kr": "Südkorea · KRW · experimentell",
-    "cn": "China · kein Guthaben-Angebot in der Quelle belegt",
-    "custom": "Benutzerdefiniert",
-}
-BASES = {"regular": "Nur reguläre Punkte", "combined": "Reguläre und exklusive Punkte"}
+REGIONS = ('unset', 'eu', 'us', 'uk', 'ca', 'au', 'jp', 'asia', 'kr', 'cn', 'custom')
+BASES = ('regular', 'combined')
 REWARD_SENSORS = (
-    ("reward_balance_value", "Gutscheine – Kontowert anteilig", "mdi:cash", "money"),
-    ("reward_earned_value", "Gutscheine – Gesamtverdienst als Gegenwert", "mdi:cash-plus", "money"),
-    ("reward_cards", "Gutscheine – Ganze Gutscheine finanzierbar", "mdi:ticket", "count"),
-    ("reward_credit", "Gutscheine – Guthaben ganzer Gutscheine", "mdi:gift", "money"),
-    ("reward_missing", "Gutscheine – Fehlende Punkte zum nächsten", "mdi:target", "points"),
-    ("reward_progress", "Gutscheine – Fortschritt zum nächsten", "mdi:progress-clock", "percent"),
+    ("reward_balance_value", "mdi:cash", "money"),
+    ("reward_earned_value", "mdi:cash-plus", "money"),
+    ("reward_cards", "mdi:ticket", "count"),
+    ("reward_credit", "mdi:gift", "money"),
+    ("reward_missing", "mdi:target", "points"),
+    ("reward_progress", "mdi:progress-clock", "percent"),
 )
 CASH_SOURCE = "https://blog.bambulab.com/exclusive-model-program-cash-rewards-and-copyright-support/"
 CASH_RATE = Decimal("0.066")
 CASH_MIN = Decimal("100")
 CASH_MAX = Decimal("1000")
 CASH_SENSORS = (
-    ("cash_balance_value", "USD-Auszahlung – Aktueller Gegenwert", "mdi:currency-usd", "cash"),
-    ("cash_earned_value", "USD-Auszahlung – Gesamtverdienst als Gegenwert", "mdi:cash-plus", "cash"),
-    ("cash_claimable", "USD-Auszahlung – Beantragbar rechnerisch", "mdi:cash-check", "cash"),
-    ("cash_missing_usd", "USD-Auszahlung – Fehlender Betrag bis 100 USD", "mdi:target", "cash"),
-    ("cash_missing_points", "USD-Auszahlung – Fehlende Punkte bis 100 USD", "mdi:target", "points"),
-    ("cash_progress", "USD-Auszahlung – Fortschritt bis 100 USD", "mdi:progress-clock", "percent"),
+    ("cash_balance_value", "mdi:currency-usd", "cash"),
+    ("cash_earned_value", "mdi:cash-plus", "cash"),
+    ("cash_claimable", "mdi:cash-check", "cash"),
+    ("cash_missing_usd", "mdi:target", "cash"),
+    ("cash_missing_points", "mdi:target", "points"),
+    ("cash_progress", "mdi:progress-clock", "percent"),
 )
 
 

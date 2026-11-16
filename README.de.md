@@ -1,23 +1,14 @@
 # MakerWorld Creator Stats
 
-Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.3-beta2 im experimentellen Beta-Branch; der stabile `main`-Branch bleibt bei 0.4.2.
+[English](README.md)
 
-## Experimentelle Beta 0.4.3-beta2
+MakerWorld Creator Stats ist eine eigenständige Home-Assistant-Integration für Creator-Statistiken, Punkte, Boosts und geschätzte Prämienwerte.
 
-Dieser Branch verwendet eine eindeutige, versionierte Kennung:
-`ha-makerworld-creator-stats/v0.4.3-beta2`.
-Die Beta fragt etwa alle 30–31 Minuten das authentifizierte Creator-Profil ab.
-Punkte- und Boost-Details werden unabhängig voneinander etwa alle zwei Stunden
-abgerufen, zeitlich versetzt und mit höchstens einer Zusatzanfrage je Profildurchlauf.
-Die umfangreiche Transaktionshistorie bleibt deaktiviert; die 7-/14-/30-Tage-
-Einnahmesensoren sind deshalb nicht verfügbar. Diagnose-Sensoren zeigen
-nächste Aktualisierungen und API-Verbindungsstatus an. Bei ausdrücklich angestoßener Anmeldung oder
-erneuter Authentifizierung werden weiterhin separate Login-Abfragen ausgeführt.
+## Beta 3
 
-Die Kennung verleiht **keine** API-Berechtigung. Bei HTTP 403 oder 429 bitte
-nicht wiederholt neu laden. Anleitung: [BETA.md](BETA.md).
-Die folgenden Abschnitte beschreiben überwiegend die stabile Funktionsweise;
-die Beta schränkt den Datenabruf absichtlich ein.
+Dieser Branch bereitet Version 0.4.3-beta3 für HACS und den Home-Assistant-Marketplace vor. Einrichtung, Optionen, Sensornamen und Verbindungsstatus sind auf Deutsch und Englisch verfügbar. Das violette Diagramm-Icon ist ein eigenes Projektmotiv. Home Assistant kann mitgelieferte Symbole benutzerdefinierter Integrationen ab Version 2026.3 anzeigen.
+
+Die 7-, 14- und 30-Tage-Einnahmesensoren bleiben nicht verfügbar. Ihre eindeutigen IDs bleiben erhalten. Die Diagnose zeigt die nächste Profil-, Punkte- und Boost-Aktualisierung, die letzte erfolgreiche Profilabfrage und den API-Verbindungsstatus.
 
 ## Projektstatus
 
@@ -29,27 +20,27 @@ Stand 12. November 2026: Die Integration wurde in der eigenen Home-Assistant-Ins
 
 ## Abfragehäufigkeit und Schutzpausen
 
-Kontostatistiken werden ungefähr alle 30 Minuten aktualisiert, mit bis zu einer Minute zufälligem Zeitversatz. Der Transaktionsverlauf wird höchstens alle sechs Stunden importiert. Alle darauf basierenden Rechensensoren verwenden diese gemeinsam geladenen Daten und erzeugen keine eigenen API-Abfragen.
+Das Creator-Profil wird normalerweise alle 30–31 Minuten aktualisiert. Punkte- und Boost-Details haben jeweils einen eigenen Abfrageabstand von ungefähr zwei Stunden. Pro Profildurchlauf gibt es höchstens eine Zusatzanfrage. Der erste Durchlauf nach dem Laden fragt nur das Profil ab. Rechensensoren verwenden bereits geladene Daten. Zwischengespeicherte Punkte- und Boost-Werte können bei Fehlern bis zu vier Stunden nach der letzten erfolgreichen Zusatzabfrage verfügbar bleiben.
 
 Bei erkannter Cloudflare-Sperre pausieren die Statistikabfragen des betroffenen Kontos zunächst zwei Stunden, bei weiteren gesperrten Versuchen vier, acht und höchstens zwölf Stunden. Bei HTTP 429 beginnt die Pause bei 30 Minuten und verdoppelt sich ebenfalls bis maximal zwölf Stunden. Eine längere gültige Retry-After-Servervorgabe kann die Pause auf höchstens 24 Stunden verlängern. Ein zufälliger Zeitversatz von bis zu einer Minute kommt hinzu, ohne das 24-Stunden-Limit zu überschreiten. Diese Zeiten sind unsere vorsichtige Strategie, keine bestätigten Bambu-Grenzwerte oder Freigabeversprechen.
 
-Die Pause samt Fehlerzähler wird ohne Zugangsdaten lokal gespeichert. Neuladen und Home-Assistant-Neustart umgehen eine gespeicherte Pause nicht. Nach Ablauf erfolgt automatisch ein neuer Versuch; nach erfolgreicher Aktualisierung beginnt die normale Frequenz wieder. Auch eine Sperre beim Transaktionsimport hält weitere Statistikabfragen an. Home Assistant zeigt den frühesten Wiederholungszeitpunkt ausdrücklich in UTC an. Während fehlgeschlagener Aktualisierungen sind betroffene Sensoren nicht verfügbar; alte Werte werden nicht als frisch ausgegeben.
+Die Pause samt Fehlerzähler wird ohne Zugangsdaten lokal gespeichert. Neuladen und Home-Assistant-Neustart umgehen eine gespeicherte Pause nicht. Nach Ablauf erfolgt automatisch ein neuer Versuch; nach erfolgreicher Aktualisierung beginnt die normale Frequenz wieder. Auch eine Sperre bei der Punkte- oder Boost-Abfrage hält weitere Statistikabfragen an. Home Assistant zeigt den frühesten Wiederholungszeitpunkt ausdrücklich in UTC an. Während fehlgeschlagener Aktualisierungen sind betroffene Sensoren nicht verfügbar; alte Werte werden nicht als frisch ausgegeben.
 
 Kann eine Pause nicht gespeichert werden, bleibt sie im laufenden Home Assistant aktiv und die Fehlermeldung weist darauf hin. Bei unlesbarem Pausenspeicher starten vorsichtshalber keine Statistikabfragen. Bewusst gestartete Anmeldungen sind von dieser Statistikpause getrennt. Andere Integrationen und Konten können weiter eigene Anfragen erzeugen.
 
 ## Verbindungsfehler verstehen
 
-Ab Version 0.4.1 nennt eine abgewiesene Anfrage auch den betroffenen Bereich, beispielsweise Kontoprofil oder Transaktionsverlauf. Die Erkennung unterscheidet eine ausdrücklich erkennbare Cloudflare-Schutzseite, ein fehlendes CSRF-Cookie, HTTP 429 (Anfragebegrenzung) und einen nicht näher erklärbaren HTTP 403. Ein Cloudflare-Serverheader allein beweist keine Sperre. Antworttexte, Cookies und Zugangsdaten werden nicht in Fehlermeldungen übernommen; zur Einordnung wird höchstens ein 8-KiB-Antwortpräfix geprüft.
+Ab Version 0.4.1 nennt eine abgewiesene Anfrage auch den betroffenen Bereich, beispielsweise Kontoprofil oder Punkte. Die Erkennung unterscheidet eine ausdrücklich erkennbare Cloudflare-Schutzseite, ein fehlendes CSRF-Cookie, HTTP 429 (Anfragebegrenzung) und einen nicht näher erklärbaren HTTP 403. Ein Cloudflare-Serverheader allein beweist keine Sperre. Antworttexte, Cookies und Zugangsdaten werden nicht in Fehlermeldungen übernommen; zur Einordnung wird höchstens ein 8-KiB-Antwortpräfix geprüft.
 
 Eine erkannte Schutzprüfung wird dadurch nicht aufgehoben. Es gibt keine bestätigte allgemeine Wartezeit bis zur Freigabe. Bei Schutzsperren nicht ständig neu laden oder neue Anmeldecodes anfordern. Bei eindeutig abgewiesenem Zugangstoken (HTTP 401) fordert Home Assistant eine erneute Anmeldung an. Weitere Hinweise und Quellen: [Untersuchung der Bambu-Fehlerberichte](docs/bambu-api-errors.md).
 
 ## Installation über HACS
 
-In HACS unter **⋮ → Benutzerdefinierte Repositories** die Adresse `https://github.com/Retropurp/ha-makerworld-creator-stats` als Typ **Integration** hinzufügen. **MakerWorld Creator Stats** herunterladen, Home Assistant neu starten und unter **Einstellungen → Geräte & Dienste** hinzufügen. Spätere Releases erscheinen als Updates.
+In HACS unter **⋮ → Benutzerdefinierte Repositories** die Adresse `https://github.com/Retropurp/ha-makerworld-creator-stats` als Typ **Integration** hinzufügen. **MakerWorld Creator Stats** herunterladen, Home Assistant neu starten und unter **Einstellungen → Geräte & Dienste** hinzufügen. Nach Veröffentlichung eines Beta-3-Pre-Releases in der Versionsauswahl v0.4.3-beta3 wählen. Bis dahin lässt sich der Entwicklungsbranch manuell installieren. In Home Assistant mit Marketplace-Unterstützung führt der [Link zum benutzerdefinierten Repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration) zur Integration.
 
 ## Manuelle Installation
 
-1. Den Ordner `custom_components/makerworld_creator_stats` aus diesem Paket nach `/config/custom_components/makerworld_creator_stats` auf deinem Home Assistant kopieren.
+1. Die Home-Assistant-Konfiguration sichern und bei einem Update den vorhandenen Integrationseintrag behalten. Den Ordner `custom_components/makerworld_creator_stats` aus diesem Paket nach `/config/custom_components/makerworld_creator_stats` auf deinem Home Assistant kopieren.
 2. Home Assistant neu starten.
 3. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **MakerWorld Creator Stats** suchen.
 4. Deine Bambu-Konto-E-Mail-Adresse eingeben und den von Bambu zugesandten Anmeldecode bestätigen. Den Code ausschließlich in deiner Home-Assistant-Oberfläche eingeben.
@@ -86,7 +77,7 @@ Alle durch diese Integration ausgelösten HTTP-Anfragen gehen über HTTPS an `ap
 | GET | `/v1/point-service/point-bill/my?offset=0&limit=1&filter=all` | Summen der Punktebewegungen |
 | GET | `/v1/point-service/boost/boostingright` | Boost-Tokens |
 
-Die Abfrage erfolgt ungefähr alle 30 Minuten. Nach einem sonstigen Fehler der Profilabfrage steigt der Abstand auf zwei Stunden; bei Cloudflare und HTTP 429 gilt die oben beschriebene gespeicherte Schutzpause. Fehler einzelner Zusatzabfragen führen zu nicht verfügbaren Werten für die betroffenen Sensoren. Bei HTTP 401 fordert Home Assistant eine erneute Anmeldung an. Einen neuen Code kannst du im Anmeldedialog ausdrücklich anfordern. Eine abweichende Konto-ID wird bei der erneuten Anmeldung abgewiesen.
+Die Profilabfrage erfolgt ungefähr alle 30 Minuten. Nach einem sonstigen Fehler der Profilabfrage steigt der Abstand auf zwei Stunden; bei Cloudflare und HTTP 429 gilt die oben beschriebene gespeicherte Schutzpause. Bei Fehlern einzelner Zusatzabfragen kann der letzte gespeicherte Wert bis zum Ablauf des Caches angezeigt werden. Bei HTTP 401 fordert Home Assistant eine erneute Anmeldung an. Einen neuen Code kannst du im Anmeldedialog ausdrücklich anfordern. Eine abweichende Konto-ID wird bei der erneuten Anmeldung abgewiesen.
 
 Die Anwendung selbst schreibt keine Anmeldeinformationen, API-Antworten oder Tokens in Protokolle. Sensible Werte gehören auch beim Teilen von Home-Assistant-Backups und Fehlerberichten geschützt. Bei manueller Installation erfolgt das Update durch Austausch der Dateien.
 
@@ -94,7 +85,7 @@ Die Anwendung selbst schreibt keine Anmeldeinformationen, API-Antworten oder Tok
 
 Automatisierte Prüfungen verwenden künstliche API-Antworten für Datenverarbeitung, HTTP-Verhalten und Fehlerfälle. Zusätzlich wurden Anmeldung, Kontostatistiken, Punkte-Gegenwerte, Transaktionsimport und Sensorgruppenauswahl in der eigenen Home-Assistant-Installation erfolgreich erprobt. Das ist ein Praxistest mit einem Konto, keine umfassende Bestätigung für andere Konten, Regionen oder alle Fehlerfälle.
 
-Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen.
+Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen. Die Installation von Beta 3, die Sprachumschaltung, die Anzeige des Icons und das Upgrade einer laufenden Installation sind separat zu prüfen. Siehe [Beta-Testplan](BETA.md).
 
 ## Quellen
 
@@ -126,16 +117,7 @@ Sechs zusätzliche USD-Sensoren zeigen den Gegenwert exklusiver Punkte, den USD-
 
 Die USD-Anzeige schneidet nach zwei Nachkommastellen ab, entsprechend dem bereitgestellten Profil-Screenshot. Die Mindestschwelle wird mit dem ungekürzten Betrag geprüft. Fehlende Punkte werden auf drei Nachkommastellen aufgerundet. Diese Berechnung nimmt keine Auszahlung vor.
 
-Für jeweils 7, 14 und 30 Tage gibt es drei weitere Sensoren. Sie zeigen verdiente Punkte, deren Gutschein-Gegenwert nach gewählter Punktebasis und den USD-Gegenwert exklusiver Einnahmen. Als Einnahmen gelten positive Punktebuchungen im Zeitfenster. Ausgaben werden nicht abgezogen. Der Zeitbezug ist der Buchungszeitpunkt aus dem Transaktionsverlauf. Ein Punkteverdienst für einen früheren Leistungstag wird deshalb dem späteren Buchungszeitpunkt zugerechnet.
-
-Der rückwirkende Import nutzt denselben Bambu-Transaktions-Endpunkt wie die vorhandenen Gesamtsummen. Er liest Seiten mit bis zu 100 Buchungen, bis der 30-Tage-Zeitraum abgedeckt oder das Ende erreicht ist. Maximal 50 Seiten und zwei Minuten pro Import sind vorgesehen. Der Abruf erfolgt beim Laden und anschließend höchstens alle sechs Stunden. Die bestehenden Kontosensoren werden ungefähr alle 30 Minuten abgefragt. Gespeicherte Schutzpausen haben Vorrang.
-
-Alle Historienseiten werden zuerst vollständig geprüft und danach gemeinsam übernommen. Bei einem Fehler stehen die neuen Zeitraumwerte auf nicht verfügbar. Die Attribute history_error und history_synced_at geben den bereinigten Fehler und den Zeitpunkt des letzten erfolgreichen Imports an. Der Zeitpunkt wird als Unix-Zeitstempel angegeben. Die minimalen Historienwerte mit Buchungszeit und Punktebeträgen werden lokal im Home-Assistant-Speicher zwischengespeichert. Ein Neustart übernimmt den Cache und den verbleibenden Sechs-Stunden-Abstand. Zugangsdaten und Modellnamen werden in diesem Cache nicht gespeichert.
-
-Der Verlauf im angemeldeten Browser zeigte datierte Gutschriften einschließlich exklusiver Punkte. Der automatisierte Import mit dem Home-Assistant-Token wurde anschließend in der eigenen Installation erfolgreich erprobt; die spätere Erreichbarkeit unterliegt den oben beschriebenen Zugriffsproblemen. Bei abweichender Antwortstruktur erfolgt eine Fehlermeldung und keine Schätzung aus dem Kontostand. Insbesondere werden unbekannte Punkteaufteilungen nicht als Null ausgegeben.
-
-Die neuen Sensoren eignen sich für Dashboard-Anzeigen und die normale Zustandshistorie. Für die abgeleiteten Sensoren werden keine Langzeitstatistiken eingerichtet. Ein Kurs- oder Punktebasiswechsel berechnet den angezeigten Gegenwert neu. Er beschreibt damit den Gegenwert zum aktuell eingestellten Kurs.
-
+Die historischen Einnahmesensoren für 7, 14 und 30 Tage bleiben in Beta 3 nicht verfügbar. Die zugehörige Transaktionshistorie wird nicht abgerufen.
 
 ## Übersichtliche Sensorgruppen ab 0.4.0
 
@@ -143,13 +125,13 @@ Unter **Einstellungen → Geräte & Dienste → MakerWorld Creator Stats → Kon
 
 | Auswahl | Rechensensoren |
 | --- | --- |
-| Nur Guthaben-Gutscheine | Gutscheinwerte und deren 7-, 14- und 30-Tage-Gegenwerte |
-| Nur direkte USD-Auszahlung | USD-Gegenwerte, Auszahlungsgrenzen und exklusive USD-Einnahmen für 7, 14 und 30 Tage |
+| Nur Guthaben-Gutscheine | Gutscheinwerte |
+| Nur direkte USD-Auszahlung | USD-Gegenwerte und Auszahlungsgrenzen |
 | Gutscheine und USD-Auszahlung | Beide Gruppen |
 
 Bestehende Installationen übernehmen beim Update zunächst beide Gruppen. Die Auswahl wird pro Konto gespeichert. Im USD-Modus ist keine Shopauswahl erforderlich. Vorhandene Gutschein-Einstellungen werden gespeichert und können bei einer späteren Umschaltung wieder genutzt werden.
 
-Beim Speichern lädt Home Assistant die Integration neu. Abgewählte Rechengruppen werden aus der Entitätenliste entfernt und bei erneuter Auswahl wieder angelegt. Selbst angelegte Dashboard-Karten oder Automationen, die diese Entitäten verwenden, müssen zur Auswahl passen. Aktive Entitäten behalten ihre bisherigen eindeutigen Schlüssel. Die Konto- und Rohpunktesensoren werden weiter angeboten. Die drei allgemeinen Punkte-Einnahmensensoren verwenden im USD-Modus exklusive Punkte und sonst die gewählte Gutschein-Punktebasis.
+Beim Speichern lädt Home Assistant die Integration neu. Abgewählte Rechengruppen werden aus der Entitätenliste entfernt und bei erneuter Auswahl wieder angelegt. Selbst angelegte Dashboard-Karten oder Automationen, die diese Entitäten verwenden, müssen zur Auswahl passen. Aktive Entitäten behalten ihre bisherigen eindeutigen Schlüssel. Die Konto- und Rohpunktesensoren werden weiter angeboten.
 
 ### Bedeutung der Finanzwerte
 
@@ -164,7 +146,7 @@ Beim Speichern lädt Home Assistant die Integration neu. Abgewählte Rechengrupp
 | USD-Auszahlung – Aktueller Gegenwert | Vorhandene exklusive Punkte × 0,066 USD |
 | USD-Auszahlung – Beantragbar rechnerisch | Durch Kontostand begrenzter exklusiver Betrag, ab 100 USD und maximal 1.000 USD pro Antrag |
 | USD-Auszahlung – Gesamtverdienst als Gegenwert | Bisher verdiente exklusive Punkte × 0,066 USD |
-| Einnahmen 7, 14 oder 30 Tage | Positive Buchungen im entsprechenden Zeitfenster. Ausgaben werden nicht abgezogen |
+| Einnahmen 7, 14 oder 30 Tage | In Beta 3 nicht verfügbar |
 
 Beispielsweise ergeben 800 Punkte bei 40 EUR Guthaben für 524 Punkte einen anteiligen Kontowert von 61,07 EUR, einen ganzen Gutschein und 40 EUR Guthaben ganzer Gutscheine. Für den folgenden Gutschein fehlen 248 Punkte.
 

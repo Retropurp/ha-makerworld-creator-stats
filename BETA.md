@@ -1,9 +1,9 @@
-# MakerWorld Creator Stats — v0.4.3-beta2 (experimental)
+# MakerWorld Creator Stats — v0.4.3-beta3 (experimental)
 
 ## Scope
 
-- Branch: `beta/0.4.3-scheduled-stats`. The stable `main` branch stays on 0.4.2; beta1 stays unchanged.
-- Client identity: `ha-makerworld-creator-stats/v0.4.3-beta2`.
+- Branch: `beta/0.4.3-marketplace`. The stable `main` branch stays on 0.4.2; Beta 2 is the development base.
+- Client identity: `ha-makerworld-creator-stats/v0.4.3-beta3`.
 - Authenticated profile: one HTTP GET approximately every 30–31 minutes.
 - Point-ledger totals: one HTTP GET approximately every 2 hours.
 - Boost-token counts: one HTTP GET approximately every 2 hours.
@@ -25,20 +25,20 @@
 
 These diagnostics reuse local scheduler state and do not call Bambu Lab. Their timestamps are estimates. When a protective pause is active, upcoming updates are moved to at least the end of that pause. All five are diagnostic entities on the MakerWorld device.
 
-## HACS testing
+## Installation and upgrade test
 
-The beta branch is **not automatically a HACS release**. To test via HACS a GitHub pre-release tagged `v0.4.3-beta2` must be published, pointing to a checked commit on this branch. If not published, use a manual branch download.
+The beta branch is **not automatically a HACS release**. To test via HACS a GitHub pre-release tagged `v0.4.3-beta3` must be published, pointing to a checked commit on this branch. If not published, use a manual branch download.
 
 1. Back up the Home Assistant configuration. Do not install beta and stable side by side; the integration domain is shared.
-2. In HACS, open the existing repository entry and choose **Redownload** (or **Download** on a first install). Enable prereleases if your HACS version offers the switch and select `v0.4.3-beta2` under **Need a different version?**. Restart Home Assistant once. See the [HACS version selector](https://hacs.xyz/docs/use/repositories/dashboard/#downloading-a-specific-version-of-a-repository).
-3. Confirm version `0.4.3-beta2`, initial profile statistics, and the existing entity IDs used by automations.
+2. In HACS, open the existing repository entry and choose **Redownload** (or **Download** on a first install). Enable prereleases if your HACS version offers the switch and select `v0.4.3-beta3` under **Need a different version?**. Restart Home Assistant once. For a branch-only build, follow the [manual installation](README.md#install-and-configure). See the [HACS version selector](https://hacs.xyz/docs/use/repositories/dashboard/#downloading-a-specific-version-of-a-repository).
+3. Confirm version `0.4.3-beta2`, initial profile statistics, and the existing entity IDs used by automations. Check setup and options in English and German, including dropdown choices, translated sensor names and the six API status labels. Server-generated description attributes follow the Home Assistant system language. Raw diagnostic details and log messages use English.
 4. Wait 2–3 hours to observe regular profile updates and the staggered points and boost updates. Check the five diagnostics. The 7/14/30-day income sensors should stay unavailable. Avoid repeated reloads or forced updates.
 5. If an ordinary optional error occurs naturally, check for `partial` with profile statistics still available. If a denial occurs naturally, check for `paused` and a next profile time at or after the end of the pause. Stop the test after repeated denials. Do not deliberately trigger them. Report sanitized logs only and remove tokens, emails, UID, cookies, and raw API bodies.
 
 ## Rollback
 
-If the API is paused, leave the integration disabled until the indicated pause expires before resuming tests. In HACS, use **Redownload → Need a different version? → v0.4.3-beta1** and restart Home Assistant. Keep the existing integration entry and local storage so Home Assistant retains the entity IDs and any saved pause. Restore the backup if the older version cannot be reinstalled. A backup may predate a newly recorded pause, so wait for that pause before re-enabling the integration.
+If the API is paused, leave the integration disabled until the indicated pause expires before resuming tests. In HACS, use **Redownload → Need a different version? → v0.4.3-beta2** and restart Home Assistant. Keep the existing integration entry and local storage so Home Assistant retains the entity IDs and any saved pause. Restore the backup if the older version cannot be reinstalled. A backup may predate a newly recorded pause, so wait for that pause before re-enabling the integration.
 
 ## Important caveat
 
-Offline tests cover scheduling and simulated responses. The authenticated API and a live Home Assistant/HACS installation still need verification. An initial profile failure can leave the entry in setup retry without diagnostic entities until setup succeeds. If local storage fails, the active pause is kept in memory and is only guaranteed until Home Assistant restarts.
+Offline tests cover scheduling and simulated responses. Beta 3 still needs a live Home Assistant upgrade check from Beta 2, a HACS or Marketplace installation check, and visual verification of the translations and branding. The automated checks use simulated data and do not verify Bambu API access or catalog acceptance. An initial profile failure can leave the entry in setup retry without diagnostic entities until setup succeeds. If local storage fails, the active pause is kept in memory and is only guaranteed until Home Assistant restarts.
