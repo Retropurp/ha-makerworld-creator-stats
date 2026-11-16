@@ -55,12 +55,15 @@ class MakerWorldApi:
                     raise AuthError("Authentication required")
                 if response.status == 400 and path == LOGIN:
                     raise CodeError("Request a new code or check the code")
-                if response.status in (403, 429):
+                if response.status in (403, 429) or response.headers.get("CF-Mitigated", "").lower() == "challenge":
                     labels = {
                         EMAIL_CODE: "Anmeldecode anfordern", LOGIN: "Anmeldung",
                         PROFILE: "Kontoprofil", POINTS: "Punktestand", BOOSTS: "Boosts",
                     }
-                    prefix = await response.content.read(8192)
+                    try:
+                        prefix = await response.content.read(8192)
+                    except (TimeoutError, ClientError):
+                        prefix = b""
                     raise classify_denial(
                         response.status, response.headers, prefix,
                         labels.get(path, "Transaktionsverlauf"),

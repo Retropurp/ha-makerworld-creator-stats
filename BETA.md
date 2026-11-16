@@ -8,8 +8,9 @@
 - Point-ledger totals: one HTTP GET approximately every 2 hours.
 - Boost-token counts: one HTTP GET approximately every 2 hours.
 - The two optional GETs are staggered over later profile cycles: **never more than one optional GET per scheduled profile refresh**.
+- In a healthy steady state, expect roughly three application-level reads per hour on average for one account. A refresh before the scheduled time does not send another request. The first cycle after setup or reload requests only the profile, even when both optional endpoints are overdue. Repeated reloads can still trigger extra profile reads outside a protection pause.
 - The paginated transaction-history import is still **disabled**. Rolling 7/14/30-day income sensors remain unavailable.
-- Optional results are cached (only numeric counters, no access credentials). On refresh failures previously cached optional values expire after 4 hours.
+- Optional results and retry times are cached without access credentials. On refresh failures previously cached optional values expire after 4 hours.
 - Cloudflare challenges, HTTP 429 and explicit HTTP 403 denials trigger a persistent backoff. Requests are not retried during the pause. Do not bypass rate limits.
 - The initial login flow may make additional requests only when explicitly starting/re-authenticating an account.
 - MakerWorld's undocumented API is not guaranteed or specifically approved for this project. Using a named User-Agent does not grant API rights.
@@ -29,16 +30,15 @@ These diagnostics reuse local scheduler state and do not call Bambu Lab. Their t
 The beta branch is **not automatically a HACS release**. To test via HACS a GitHub pre-release tagged `v0.4.3-beta2` must be published, pointing to a checked commit on this branch. If not published, use a manual branch download.
 
 1. Back up the Home Assistant configuration. Do not install beta and stable side by side; the integration domain is shared.
-2. Install the prerelease (when available) via HACS **Include prereleases → Other version**. Restart Home Assistant.
-3. Confirm version `0.4.3-beta2` and check initial profile statistics.
-4. Wait for scheduled point and boost updates over the following one to two hours. Do not repeatedly reload or force updates.
-5. Check the five diagnostic sensors, including their pause/status behavior. Report sanitized logs only; remove tokens, emails, UID, cookies, and raw API bodies.
-6. Confirm model/download/print sensors remain available if an optional endpoint returns an ordinary error, and that an access denial produces a protective pause.
+2. In HACS, open the existing repository entry and choose **Redownload** (or **Download** on a first install). Enable prereleases if your HACS version offers the switch and select `v0.4.3-beta2` under **Need a different version?**. Restart Home Assistant once. See the [HACS version selector](https://hacs.xyz/docs/use/repositories/dashboard/#downloading-a-specific-version-of-a-repository).
+3. Confirm version `0.4.3-beta2`, initial profile statistics, and the existing entity IDs used by automations.
+4. Wait 2–3 hours to observe regular profile updates and the staggered points and boost updates. Check the five diagnostics. The 7/14/30-day income sensors should stay unavailable. Avoid repeated reloads or forced updates.
+5. If an ordinary optional error occurs naturally, check for `partial` with profile statistics still available. If a denial occurs naturally, check for `paused` and a next profile time at or after the end of the pause. Stop the test after repeated denials. Do not deliberately trigger them. Report sanitized logs only and remove tokens, emails, UID, cookies, and raw API bodies.
 
 ## Rollback
 
-Return to HACS prerelease `v0.4.3-beta1` and restart Home Assistant, or restore your backup. A rollback does not change Bambu's server-side access policy.
+If the API is paused, leave the integration disabled until the indicated pause expires before resuming tests. In HACS, use **Redownload → Need a different version? → v0.4.3-beta1** and restart Home Assistant. Keep the existing integration entry and local storage so Home Assistant retains the entity IDs and any saved pause. Restore the backup if the older version cannot be reinstalled. A backup may predate a newly recorded pause, so wait for that pause before re-enabling the integration.
 
 ## Important caveat
 
-No live authenticated account test is performed by the source-code changes. Repeated 403/429 is a reason to stop testing and review the API access requirements.
+Offline tests cover scheduling and simulated responses. The authenticated API and a live Home Assistant/HACS installation still need verification. An initial profile failure can leave the entry in setup retry without diagnostic entities until setup succeeds. If local storage fails, the active pause is kept in memory and is only guaranteed until Home Assistant restarts.

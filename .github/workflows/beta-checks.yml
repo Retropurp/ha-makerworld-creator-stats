@@ -6,7 +6,22 @@ on:
       - "beta/**"
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@f4ca6f671bd429efb108c0f2fa0ae8af0215986c
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@d556e736723344f83838d08488c983a15381059a
+        with:
+          category: integration
+          comment: "false"
   check:
     runs-on: ubuntu-latest
     steps:

@@ -5,7 +5,8 @@ import logging
 import random
 import time
 
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.core import callback
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -20,6 +21,16 @@ from .refresh_policy import (
 )
 
 LOGGER = logging.getLogger(__name__)
+STORAGE_ERRORS = (HomeAssistantError, OSError, ValueError, TypeError, OverflowError, KeyError)
+OPTIONAL_AUTH_DELAY = 6 * 3600
+
+
+class ScheduledUpdateFailed(UpdateFailed):
+    """Expose the retry time on HA versions that support it."""
+
+    def __init__(self, message, *, retry_after):
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
@@ -31,6 +42,8 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             update_interval=self._profile_interval(),
         )
         self.api = api
+        self._previous_refresh_failed = False
+        self._first_profile_pending = True
         self.account_id = entry.unique_id
         self.income_events = None
         self.history_synced_at = 0
@@ -40,7 +53,9 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
 
         shared = hass.data.setdefault(DOMAIN, {}).setdefault("pauses", {})
         self.pause = shared.setdefault(
-            entry.entry_id, {"state": Backoff(), "loaded": False, "persisted": True},
+            entry.entry_id, {
+                "state": Backoff(), "loaded": False, "persisted": True, "endpoint": "profile",
+            },
         )
         self.pause_store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.pause")
 
@@ -62,11 +77,12 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
     async def _async_setup(self):
         if not self.pause["loaded"]:
             try:
-                self.pause["state"].restore(
-                    await self.pause_store.async_load(), time.time(),
-                )
-            except (OSError, ValueError, TypeError, OverflowError):
-                raise UpdateFailed(
+                saved = await self.pause_store.async_load()
+                self.pause["state"].restore(saved, time.time())
+                if saved and saved.get("endpoint") in ("points", "boosts"):
+                    self.pause["endpoint"] = saved["endpoint"]
+            except STORAGE_ERRORS:
+                raise ScheduledUpdateFailed(
                     "Gespeicherte Schutzpause nicht lesbar; keine Anfrage wird gestartet.",
                     retry_after=3600,
                 ) from None
@@ -76,7 +92,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         self._due = first_due(now)
         try:
             cache = await self.extras_store.async_load()
-        except (OSError, ValueError, TypeError, OverflowError):
+        except STORAGE_ERRORS:
             cache = None
         if isinstance(cache, dict) and cache.get("account_id") == self.account_id:
             for kind, fields in EXTRA_KEYS.items():
@@ -85,13 +101,17 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
                     continue
                 stamp = stored.get("updated_at")
                 values = stored.get("values")
+                due = stored.get("due_at")
+                valid_due = valid_timestamp(due, now + OPTIONAL_AUTH_DELAY, max_age=OPTIONAL_AUTH_DELAY)
+                if valid_due:
+                    self._due[kind] = due
                 if not valid_timestamp(stamp, now) or not isinstance(values, dict):
                     continue
                 clean = self._clean_values(kind, values)
                 if clean:
                     self._extras[kind] = clean
                     self._extra_updated[kind] = float(stamp)
-                    self._due[kind] = max(float(stamp) + EXTRA_SECONDS, now)
+                    self._due[kind] = max(due if valid_due else now, float(stamp) + EXTRA_SECONDS)
 
         remaining = self.pause["state"].remaining(now)
         if remaining:
@@ -115,11 +135,12 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         for kind in EXTRA_KEYS:
             payload[kind] = {
                 "updated_at": self._extra_updated[kind],
+                "due_at": self._due[kind],
                 "values": self._extras[kind],
             }
         try:
             await self.extras_store.async_save(payload)
-        except OSError:
+        except STORAGE_ERRORS:
             LOGGER.warning("Could not persist MakerWorld optional-statistics cache")
 
     def _current_extra(self, kind, now):
@@ -139,8 +160,9 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         due = self._due[kind]
         if not due:
             return None
-        remaining = self.pause["state"].remaining(time.time())
-        return max(due, self.pause["state"].until) if remaining else due
+        if self.connection_status == "auth_required":
+            return None
+        return max(due, self.next_profile_update or 0)
 
     @property
     def next_profile_update(self):
@@ -148,6 +170,12 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         if remaining:
             return max(self.next_profile_at, self.pause["state"].until)
         return self.next_profile_at or None
+
+    async def async_request_refresh(self):
+        """Keep manual entity refreshes within the scheduled request budget."""
+        if self.connection_status == "auth_required" or time.time() < self.next_profile_at:
+            return
+        await super().async_request_refresh()
 
     async def _async_update_data(self):
         now = time.time()
@@ -159,15 +187,18 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
 
         try:
             raw_profile = await self.api.profile()
-            if str(raw_profile["uid"]) != self.account_id:
-                raise ConfigEntryAuthFailed("MakerWorld account changed; sign in again")
-        except AuthError:
+            if str(raw_profile.get("uid")) != self.account_id:
+                raise AuthError("MakerWorld account changed; sign in again")
+            # Validate the profile before recording success or calling an optional endpoint.
+            MakerWorldProfile.from_json(raw_profile)
+        except AuthError as error:
             self.connection_status = "auth_required"
-            self.last_error = "Authentication required"
+            self.last_error = str(error)
+            self.next_profile_at = 0
             raise ConfigEntryAuthFailed("Please sign in with a new email code") from None
         except (CloudflareError, RateLimitError, AccessDeniedError) as error:
             self.last_error = str(error)
-            raise await self._async_pause(error) from None
+            raise await self._async_pause(error, "profile") from None
         except ApiError as error:
             self.connection_status = "error"
             self.last_error = str(error)
@@ -184,13 +215,13 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         now = time.time()
         self.last_profile_success = now
         self.update_interval = self._profile_interval()
-        self.next_profile_at = now + self.update_interval.total_seconds()
         self.connection_status = "success"
         self.last_error = ""
 
         # First update is profile-only. Restore/cache optional data without
         # launching a burst of requests on every startup or account reload.
-        chosen = due_optional(self._due, now)
+        chosen = None if self._first_profile_pending else due_optional(self._due, now)
+        self._first_profile_pending = False
         if chosen is not None:
             await self._refresh_optional(chosen)
 
@@ -198,9 +229,10 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             if any(self.extra_error.values()):
                 # A healthy profile does not imply optional endpoints succeeded.
                 self.connection_status = "partial"
-            if self.pause["state"].strikes:
+            if self.pause["state"].strikes and self.pause["endpoint"] == "profile":
                 self.pause["state"].reset()
                 await self._save_pause()
+            self.next_profile_at = time.time() + self.update_interval.total_seconds()
 
         now = time.time()
         return MakerWorldProfile.from_json(
@@ -219,14 +251,13 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
                 raise ApiError("Optional MakerWorld statistics have no recognized counters")
         except AuthError:
             self.extra_error[kind] = "Account token rejected for optional statistics"
-            self._due[kind] = now + 6 * 3600
+            self._due[kind] = now + OPTIONAL_AUTH_DELAY
             self.connection_status = "partial"
             self.last_error = self.extra_error[kind]
         except (CloudflareError, RateLimitError, AccessDeniedError) as error:
             self.extra_error[kind] = str(error)
             self.last_error = str(error)
-            self._due[kind] = now + EXTRA_SECONDS
-            await self._async_pause(error)  # Record and persist; keep fresh profile.
+            await self._async_pause(error, kind)  # Record and persist; keep fresh profile.
         except ApiError as error:
             self.extra_error[kind] = str(error)
             self.connection_status = "partial"
@@ -235,16 +266,34 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             self._extras[kind] = clean
             self._extra_updated[kind] = time.time()
             self.extra_error[kind] = ""
-            await self._save_extras()
+            if self.pause["state"].strikes and self.pause["endpoint"] == kind:
+                self.pause["state"].reset()
+                await self._save_pause()
+        await self._save_extras()
+        if self.connection_status == "paused":
+            self.update_interval = timedelta(seconds=max(0, self.pause["state"].until - time.time()))
+
+    @callback
+    def _async_refresh_finished(self):
+        # HA skips its normal listener notification after consecutive failures.
+        failed = not self.last_update_success
+        if failed and self._previous_refresh_failed:
+            self.async_update_listeners()
+        self._previous_refresh_failed = failed
 
     async def _save_pause(self):
+        payload = {**self.pause["state"].as_dict(), "endpoint": self.pause["endpoint"]}
         try:
-            await self.pause_store.async_save(self.pause["state"].as_dict())
-            self.pause["persisted"] = True
-        except OSError:
+            await self.pause_store.async_save(payload)
+            # Store can log a write error without raising it to the caller.
+            self.pause["persisted"] = await self.pause_store.async_load() == payload
+        except STORAGE_ERRORS:
             self.pause["persisted"] = False
+        if not self.pause["persisted"]:
+            LOGGER.warning("Could not verify the persisted MakerWorld protection pause")
 
     def _pause_failure(self, remaining, detail=""):
+        self.update_interval = timedelta(seconds=remaining)
         until = datetime.fromtimestamp(self.pause["state"].until, timezone.utc)
         kinds = {
             "cloudflare": "Cloudflare",
@@ -257,9 +306,9 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             message += " Schutzpause konnte nicht gespeichert werden."
         if detail:
             message += f" {detail}"
-        return UpdateFailed(message, retry_after=remaining)
+        return ScheduledUpdateFailed(message, retry_after=remaining)
 
-    async def _async_pause(self, error):
+    async def _async_pause(self, error, endpoint):
         state = self.pause["state"]
         if isinstance(error, CloudflareError):
             reason = "cloudflare"
@@ -268,6 +317,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         else:
             reason = "denied"
         state.deny(reason, time.time(), error.retry_after, random.uniform(0, 60))
+        self.pause["endpoint"] = endpoint
         await self._save_pause()
         self.connection_status = "paused"
         self.next_profile_at = state.until

@@ -45,16 +45,17 @@ def classify_denial(status, headers, body, endpoint):
         "cloudflare", "/cdn-cgi/challenge-platform/", "cf-chl-",
     )))
     # endpoint is supplied by our fixed allowlist, never by the response.
+    retry_after = retry_after_seconds(headers.get("retry-after"), time.time())
     if status == 429:
         return RateLimitError(
             f"{endpoint}: Anfragebegrenzung (HTTP 429). Später erneut versuchen.",
-            retry_after=retry_after_seconds(headers.get("retry-after"), time.time()),
+            retry_after=retry_after,
         )
     if cloudflare:
         return CloudflareError(
             f"{endpoint}: Cloudflare-Schutzprüfung oder Zugriffssperre erkannt "
-            "(HTTP 403). Später erneut versuchen; ein neues Passwort ist dadurch nicht erforderlich.",
-            retry_after=retry_after_seconds(headers.get("retry-after"), time.time()),
+            f"(HTTP {status}). Später erneut versuchen; ein neues Passwort ist dadurch nicht erforderlich.",
+            retry_after=retry_after,
         )
     try:
         data = json.loads(text)
@@ -64,8 +65,11 @@ def classify_denial(status, headers, body, endpoint):
         data.get("reason") == "missing_cookie"
         or data.get("error") == "csrf error: missing_cookie"
     ):
-        return AccessDeniedError(f"{endpoint}: Bambu verlangt ein CSRF-Cookie (HTTP 403).")
+        return AccessDeniedError(
+            f"{endpoint}: Bambu verlangt ein CSRF-Cookie (HTTP 403).", retry_after=retry_after,
+        )
     return AccessDeniedError(
         f"{endpoint}: Zugriff von Bambu abgewiesen (HTTP 403). "
-        "Ursache nicht eindeutig; keine bestätigte Cloudflare- oder Anmeldediagnose."
+        "Ursache nicht eindeutig; keine bestätigte Cloudflare- oder Anmeldediagnose.",
+        retry_after=retry_after,
     )
