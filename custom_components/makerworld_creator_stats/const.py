@@ -1,6 +1,20 @@
 """Constants for the standalone MakerWorld integration."""
 
+from pathlib import Path
+import json
+
 DOMAIN = "makerworld_creator_stats"
+
+# Identify this project unambiguously in all API requests.
+CLIENT_NAME = "ha-makerworld-creator-stats"
+CLIENT_VERSION = json.loads(
+    Path(__file__).with_name("manifest.json").read_text(encoding="utf-8")
+)["version"]
+USER_AGENT = f"{CLIENT_NAME}/v{CLIENT_VERSION}"
+
+# Minimal diagnostic beta: read the signed-in creator profile only.
+# Disabled until endpoint access is understood: point ledger and boost-token history.
+BETA_PROFILE_ONLY = True
 BASE_URL = "https://api.bambulab.com"
 EMAIL_CODE = "/v1/user-service/user/sendemail/code"
 LOGIN = "/v1/user-service/user/login"

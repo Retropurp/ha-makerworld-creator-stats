@@ -13,7 +13,7 @@ from homeassistant.helpers.storage import Store
 from .api import ApiError, AuthError
 from .errors import CloudflareError, RateLimitError
 from .backoff import Backoff
-from .const import BOOSTS, DOMAIN, POINTS
+from .const import BETA_PROFILE_ONLY, BOOSTS, DOMAIN, POINTS
 from .profile import MakerWorldProfile
 from .transactions import HISTORY_INTERVAL, TransactionError, read_cache
 
@@ -49,6 +49,10 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
                     retry_after=3600,
                 ) from None
             self.pause["loaded"] = True
+        if BETA_PROFILE_ONLY:
+            # Do not load old transactions or expose cached history as fresh.
+            self.history_error = "Transaction history disabled in profile-only beta"
+            return
         try:
             cached = read_cache(await self.history_store.async_load(), time.time())
         except (OSError, ValueError, TypeError, OverflowError):
@@ -65,8 +69,12 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             profile = await self.api.profile()
             if str(profile["uid"]) != self.account_id:
                 raise ConfigEntryAuthFailed("Account changed. Sign in again")
-            points = await self.api.optional_stats(POINTS)
-            boosts = await self.api.optional_stats(BOOSTS)
+            if BETA_PROFILE_ONLY:
+                # Data present in the profile (points/boost) remains available.
+                points, boosts = {}, {}
+            else:
+                points = await self.api.optional_stats(POINTS)
+                boosts = await self.api.optional_stats(BOOSTS)
             result = MakerWorldProfile.from_json(profile, points, boosts)
         except AuthError:
             raise ConfigEntryAuthFailed("Please sign in with a new email code") from None
@@ -80,7 +88,7 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
             raise UpdateFailed("Unexpected statistics format") from None
         self.update_interval = timedelta(minutes=30, seconds=random.uniform(0, 60))
         now = time.time()
-        if now - self.history_attempted_at >= HISTORY_INTERVAL:
+        if not BETA_PROFILE_ONLY and now - self.history_attempted_at >= HISTORY_INTERVAL:
             self.history_attempted_at = now
             try:
                 async with asyncio.timeout(120):

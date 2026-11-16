@@ -1,6 +1,21 @@
 # MakerWorld Creator Stats
 
-Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.2.
+Eigenständige Home-Assistant-Integration für 25 MakerWorld-Kontowerte. Version 0.4.3-beta1 im experimentellen Beta-Branch; der stabile `main`-Branch bleibt bei 0.4.2.
+
+## Experimentelle Beta 0.4.3-beta1
+
+Dieser Branch verwendet eine eindeutige, versionierte Kennung:
+`ha-makerworld-creator-stats/v0.4.3-beta1`.
+Die Beta fragt etwa alle 30–31 Minuten **nur das authentifizierte Creator-Profil**
+ab. Die separaten Endpunkte für Punktetransaktionen, Boost-Tokens und den
+Transaktionsverlauf sind vorübergehend abgeschaltet; einige Sensoren sind
+deshalb nicht verfügbar. Bei ausdrücklich angestoßener Anmeldung oder
+erneuter Authentifizierung werden weiterhin separate Login-Abfragen ausgeführt.
+
+Die Kennung verleiht **keine** API-Berechtigung. Bei HTTP 403 oder 429 bitte
+nicht wiederholt neu laden. Anleitung: [BETA.md](BETA.md).
+Die folgenden Abschnitte beschreiben überwiegend die stabile Funktionsweise;
+die Beta schränkt den Datenabruf absichtlich ein.
 
 ## Projektstatus
 

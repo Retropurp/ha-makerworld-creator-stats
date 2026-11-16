@@ -2,7 +2,22 @@
 
 [Deutsch](README.de.md)
 
-MakerWorld Creator Stats is an independent Home Assistant community integration that reads the signed-in creator's MakerWorld statistics and calculates reward estimates locally. The integration on this branch is version 0.4.2.
+MakerWorld Creator Stats is an independent Home Assistant community integration that reads the signed-in creator's MakerWorld statistics and calculates reward estimates locally. The experimental beta branch is version 0.4.3-beta1. The stable `main` branch remains at 0.4.2.
+
+## Experimental beta 0.4.3-beta1
+
+This branch tests an unambiguous, versioned client identity:
+`ha-makerworld-creator-stats/v0.4.3-beta1`. Only the authenticated creator
+profile is polled (normally once every 30–31 minutes). Additional point-ledger,
+boost-token, and transaction-history requests are deliberately disabled. Some
+sensors therefore report unavailable. The existing login flow can make separate
+requests during explicit account setup or reauthentication.
+
+This does **not** grant API permission or prove that Bambu Lab accepts the
+requests. Do not repeatedly reload after HTTP 403 or rate limiting.
+See [BETA.md](BETA.md) for installation and a controlled test.
+Sections below describe the stable feature set; availability is reduced
+for this beta.
 
 ## Project status
 
