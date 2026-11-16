@@ -194,9 +194,13 @@ class MakerWorldCoordinator(DataUpdateCoordinator[MakerWorldProfile]):
         if chosen is not None:
             await self._refresh_optional(chosen)
 
-        if not self.pause["state"].remaining(time.time()) and self.pause["state"].strikes:
-            self.pause["state"].reset()
-            await self._save_pause()
+        if not self.pause["state"].remaining(time.time()):
+            if any(self.extra_error.values()):
+                # A healthy profile does not imply optional endpoints succeeded.
+                self.connection_status = "partial"
+            if self.pause["state"].strikes:
+                self.pause["state"].reset()
+                await self._save_pause()
 
         now = time.time()
         return MakerWorldProfile.from_json(
