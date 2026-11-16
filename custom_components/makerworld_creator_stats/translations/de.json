@@ -36,9 +36,10 @@
     "step": {
       "init": {
         "title": "Sensorgruppen auswählen",
-        "description": "Gutscheinsensoren schätzen das Bambu-Shop-Guthaben. Die USD-Auszahlung verwendet exklusive Punkte und hat eine Mindestgrenze von 100 USD. Historische Einnahmesensoren sind in dieser Beta nicht verfügbar. Home Assistant entfernt abgewählte Gruppen aus der Entitätenliste. Passe Dashboards und Automationen mit diesen Entitäten an. Kontostatistiken bleiben verfügbar.",
+        "description": "Gutscheinsensoren schätzen das Bambu-Shop-Guthaben. Die USD-Auszahlung verwendet exklusive Punkte und hat eine Mindestgrenze von 100 USD. Historische Einnahmesensoren sind in dieser Beta nicht verfügbar. Home Assistant entfernt abgewählte Gruppen aus der Entitätenliste. Passe Dashboards und Automationen mit diesen Entitäten an. Kontostatistiken bleiben verfügbar. Private Detail-APIs werden nur auf Wunsch abgefragt. Das Profil liefert weiterhin Guthaben und erhaltene Boosts. Bestehende Installationen bleiben zunächst aktiviert.",
         "data": {
-          "sensor_view": "Welche Rechensensoren möchtest du verwenden?"
+          "sensor_view": "Welche Rechensensoren möchtest du verwenden?",
+          "private_stats_enabled": "Private Punkte- und Boost-Details abrufen (alle 6 Stunden; bei neuen Konten zunächst aus)"
         }
       },
       "terms": {

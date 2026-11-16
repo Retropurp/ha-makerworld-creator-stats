@@ -94,7 +94,7 @@ class MakerWorldConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self._abort_if_unique_id_configured()
                     return self.async_create_entry(
                         title=f"MakerWorld {profile.get('name') or uid}",
-                        data={"email": self._email, "token": token},
+                        data={"email": self._email, "token": token, "private_stats_enabled": False},
                     )
         return self.async_show_form(
             step_id="code",
@@ -116,6 +116,7 @@ class RewardsOptionsFlow(config_entries.OptionsFlow):
     """Choose a shop first, then confirm editable gift-card terms."""
 
     def __init__(self, entry):
+        self._entry = entry
         self._settings = dict(entry.options)
 
     async def async_step_init(self, user_input=None):
@@ -127,6 +128,9 @@ class RewardsOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
+                vol.Required("private_stats_enabled", default=self._settings.get(
+                    "private_stats_enabled", self._entry.data.get("private_stats_enabled", True)
+                )): bool,
                 vol.Required("sensor_view", default=self._settings.get("sensor_view", "both")): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=list(VIEWS),

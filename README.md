@@ -6,6 +6,12 @@
 
 MakerWorld Creator Stats is an independent Home Assistant integration for the signed-in creator's statistics, point balances, and boosts. It estimates gift card credit and USD cash rewards in Home Assistant using the data already fetched.
 
+## Beta 0.4.4 – API traffic safeguards (unreleased)
+
+This beta reduces the profile refresh interval from every 30–31 minutes to **60–61 minutes** and private point/boost details from every 2 hours to **6 hours** (with only one optional request on a profile cycle). New installations leave private detail endpoints **off** until explicitly enabled through Configure; existing entries keep them enabled unless you opt out. Profile-derived point balances, received boosts and available boost tokens work without these additional requests. A definitive HTTP 401 from either private endpoint suspends that endpoint until a *new authentication token* is provided, including across restarts. Cloudflare/403/429 responses continue to use cautious backoff. Transaction-history imports remain disabled.
+
+This version is experimental. Test it using the linked draft PR; it is **not** the stable release.
+
 ## Stable 0.4.3
 
 Version 0.4.3 replaces the former OrcaSlicer-identifying requests with our own versioned client identity, `ha-makerworld-creator-stats/v0.4.3`. It includes conservative polling, backoff and persisted retry deadlines, protections against repeated requests on startup or reload, and English/German interface translations. The purple chart icon is original project artwork; it is not Bambu Lab branding.
@@ -39,7 +45,7 @@ On 12 November 2026, [Bambu Lab publicly explained](https://forum.bambulab.com/t
 
 Your email address and access token are stored in Home Assistant's local configuration. Keep backups private.
 
-Profile updates normally run every 30–31 minutes. Points and boost requests have separate approximately two-hour schedules, staggered with at most one optional request per profile cycle. A cold start without an active pause reads the profile only. Reloads during the current profile interval reuse in-memory data. Profile failures use a two-hour retry interval, also during setup. Cached optional values can survive failures for up to four hours after their last successful update. HTTP 403, HTTP 429 and Cloudflare challenges can trigger persistent protection pauses. Check the diagnostic timestamps before retrying.
+In stable 0.4.3, profile updates normally run every 30–31 minutes. Points and boost requests have separate approximately two-hour schedules, staggered with at most one optional request per profile cycle. A cold start without an active pause reads the profile only. Reloads during the current profile interval reuse in-memory data. Profile failures use a two-hour retry interval, also during setup. Cached optional values can survive failures for up to four hours after their last successful update. HTTP 403, HTTP 429 and Cloudflare challenges can trigger persistent protection pauses. Check the diagnostic timestamps before retrying.
 
 ## Further reading
 

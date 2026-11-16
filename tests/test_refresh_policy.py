@@ -14,10 +14,10 @@ SPEC.loader.exec_module(policy)
 class PolicyTests(unittest.TestCase):
     def test_initial_fetches_are_staggered(self):
         due = policy.first_due(10000)
-        self.assertEqual(due["points"], 11800)
-        self.assertEqual(due["boosts"], 13600)
+        self.assertEqual(due["points"], 13600)
+        self.assertEqual(due["boosts"], 17200)
         self.assertIsNone(policy.due_optional(due, 10000))
-        self.assertEqual(policy.due_optional(due, 11800), "points")
+        self.assertEqual(policy.due_optional(due, 13600), "points")
 
     def test_only_one_extra_when_both_due(self):
         due = {"points": 100, "boosts": 200}
@@ -30,12 +30,12 @@ class PolicyTests(unittest.TestCase):
         self.assertFalse(policy.valid_timestamp(201, 200))
         self.assertFalse(policy.valid_timestamp(True, 200))
         self.assertFalse(policy.valid_timestamp(float("nan"), 200))
-        self.assertFalse(policy.valid_timestamp(1, 16000))
+        self.assertFalse(policy.valid_timestamp(1, 36000))
 
     def test_policy_intervals(self):
-        self.assertEqual(policy.PROFILE_SECONDS, 1800)
-        self.assertEqual(policy.EXTRA_SECONDS, 7200)
-        self.assertEqual(policy.MAX_EXTRA_AGE, 14400)
+        self.assertEqual(policy.PROFILE_SECONDS, 3600)
+        self.assertEqual(policy.EXTRA_SECONDS, 21600)
+        self.assertEqual(policy.MAX_EXTRA_AGE, 28800)
 
 
 if __name__ == "__main__":
