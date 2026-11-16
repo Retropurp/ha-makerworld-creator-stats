@@ -109,6 +109,16 @@ class MakerWorldApi:
             # Fresh missing values replace old values on a partial failure.
             return {}
 
+    async def read_stats(self, path: str) -> dict:
+        """Read one allowlisted optional endpoint, retaining error details.
+
+        Unlike optional_stats(), HTTP errors are surfaced so a denied request
+        can trigger a protective pause rather than silently re-polling.
+        """
+        if path not in (POINTS, BOOSTS):
+            raise ApiError("Unsupported statistics endpoint")
+        return await self._request(path)
+
     async def income_history(self, now):
         """Read all pages needed for 30 days, bounded to fifty requests."""
         events = []

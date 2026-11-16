@@ -38,7 +38,7 @@ class Backoff:
         if (isinstance(until, bool) or not isinstance(until, (int, float))
             or not math.isfinite(until) or not 0 <= until <= now + MAX_DELAY
             or isinstance(strikes, bool) or not isinstance(strikes, int) or not 0 <= strikes <= 6
-            or reason not in ("", "cloudflare", "throttled")):
+            or reason not in ("", "cloudflare", "throttled", "denied")):
             raise ValueError("Invalid pause cache")
         self.until, self.strikes, self.reason = until, strikes, reason
 
@@ -47,7 +47,7 @@ class Backoff:
 
     def deny(self, reason, now, retry_after=0, jitter=0):
         self.strikes = min(self.strikes + 1, 6)
-        base = 2 * 3600 if reason == "cloudflare" else 30 * 60
+        base = 2 * 3600 if reason in ("cloudflare", "denied") else 30 * 60
         delay = min(base * 2 ** (self.strikes - 1), 12 * 3600)
         self.until = now + min(MAX_DELAY, max(delay, retry_after) + jitter)
         self.reason = reason

@@ -12,9 +12,8 @@ CLIENT_VERSION = json.loads(
 )["version"]
 USER_AGENT = f"{CLIENT_NAME}/v{CLIENT_VERSION}"
 
-# Minimal diagnostic beta: read the signed-in creator profile only.
-# Disabled until endpoint access is understood: point ledger and boost-token history.
-BETA_PROFILE_ONLY = True
+# Beta 2: statistics poll carefully with independent refresh windows.
+# The paginated transaction-history import remains disabled.
 BASE_URL = "https://api.bambulab.com"
 EMAIL_CODE = "/v1/user-service/user/sendemail/code"
 LOGIN = "/v1/user-service/user/login"

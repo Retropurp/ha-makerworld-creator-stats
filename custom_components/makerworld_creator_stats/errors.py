@@ -22,6 +22,10 @@ class CodeError(ApiError):
     """The email code was rejected or expired."""
 
 
+class AccessDeniedError(ApiError):
+    """A server-side access denial not proven to be Cloudflare."""
+
+
 class CloudflareError(ApiError):
     """A challenge or block page explicitly identifies Cloudflare."""
 
@@ -60,8 +64,8 @@ def classify_denial(status, headers, body, endpoint):
         data.get("reason") == "missing_cookie"
         or data.get("error") == "csrf error: missing_cookie"
     ):
-        return ApiError(f"{endpoint}: Bambu verlangt ein CSRF-Cookie (HTTP 403).")
-    return ApiError(
+        return AccessDeniedError(f"{endpoint}: Bambu verlangt ein CSRF-Cookie (HTTP 403).")
+    return AccessDeniedError(
         f"{endpoint}: Zugriff von Bambu abgewiesen (HTTP 403). "
         "Ursache nicht eindeutig; keine bestätigte Cloudflare- oder Anmeldediagnose."
     )

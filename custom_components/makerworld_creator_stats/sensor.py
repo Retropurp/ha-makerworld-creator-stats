@@ -1,9 +1,11 @@
 """All account statistics exposed as individual sensors."""
 
 from decimal import Decimal, ROUND_DOWN
+from datetime import datetime, timezone
 import time
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription, SensorStateClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorEntityDescription, SensorStateClass
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers import entity_registry as er
@@ -47,6 +49,14 @@ CASH_DESCRIPTIONS = {
 
 
 # Snapshot values can decrease when models or activity are removed.
+DIAGNOSTIC_SENSORS = (
+    ("next_profile_update", "Nächstes Profil-Update", "mdi:clock-outline"),
+    ("next_points_at", "Nächstes Punkte-Update", "mdi:clock-outline"),
+    ("next_boosts_at", "Nächstes Boost-Update", "mdi:clock-outline"),
+    ("last_profile_success", "Letztes erfolgreiches Profil-Update", "mdi:check-circle-outline"),
+    ("connection_status", "API-Verbindungsstatus", "mdi:cloud-check-outline"),
+)
+
 SENSORS = (
     ("design_downloads", "Downloads Modelle", "mdi:download"),
     ("instance_downloads", "Downloads Druckprofile", "mdi:download"),
@@ -106,6 +116,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for kind in ("points", "money", "cash")
         if show_sensor(f"income_{kind}_{days}d", entry.options)
     )
+    async_add_entities(
+        MakerWorldDiagnosticSensor(entry.runtime_data, key, name, icon)
+        for key, name, icon in DIAGNOSTIC_SENSORS
+    )
 
 
 class MakerWorldSensor(CoordinatorEntity, SensorEntity):
@@ -117,7 +131,7 @@ class MakerWorldSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{coordinator.account_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.account_id)},
-            name=f"MakerWorld {coordinator.data.name or coordinator.account_id}",
+            name=f"MakerWorld {(coordinator.data.name if coordinator.data else None) or coordinator.account_id}",
             manufacturer="Bambu Lab",
             model="MakerWorld-Konto",
         )
@@ -135,6 +149,52 @@ class MakerWorldSensor(CoordinatorEntity, SensorEntity):
         key = self.entity_description.key
         description = POINT_DESCRIPTIONS.get(key)
         return {"beschreibung": description} if description else {}
+
+
+class MakerWorldDiagnosticSensor(CoordinatorEntity, SensorEntity):
+    """Diagnostic-only timestamps and API health; no additional API calls."""
+
+    _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator, key, name, icon):
+        super().__init__(coordinator)
+        self._key = key
+        device_class = None if key == "connection_status" else SensorDeviceClass.TIMESTAMP
+        self.entity_description = SensorEntityDescription(
+            key=key, name=name, icon=icon, device_class=device_class,
+        )
+        self._attr_unique_id = f"{coordinator.account_id}_{key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.account_id)},
+            name=f"MakerWorld {(coordinator.data.name if coordinator.data else None) or coordinator.account_id}",
+            manufacturer="Bambu Lab",
+            model="MakerWorld-Konto",
+        )
+
+    @property
+    def available(self):
+        # Remain visible even when the profile coordinator reports unavailable.
+        return self.native_value is not None
+
+    @property
+    def native_value(self):
+        value = getattr(self.coordinator, self._key, None)
+        if self._key == "connection_status":
+            return value
+        if isinstance(value, (int, float)) and value > 0:
+            return datetime.fromtimestamp(value, timezone.utc)
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        if self._key == "connection_status":
+            return {
+                "detail": self.coordinator.last_error or None,
+                "punkte_fehler": self.coordinator.extra_error["points"] or None,
+                "boost_fehler": self.coordinator.extra_error["boosts"] or None,
+            }
+        return {}
 
 
 class MakerWorldRewardSensor(MakerWorldSensor):
