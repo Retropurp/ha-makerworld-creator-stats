@@ -423,6 +423,18 @@
             "name": "Fehler bei der Boost-Aktualisierung"
           }
         }
+      },
+      "last_points_success": {
+        "name": "Letzte erfolgreiche Punkteaktualisierung"
+      },
+      "last_boosts_success": {
+        "name": "Letzte erfolgreiche Boost-Aktualisierung"
+      },
+      "pause_endpoint": {
+        "name": "Von der Schutzpause ausgelöster Endpunkt"
+      },
+      "pause_reason": {
+        "name": "Grund der aktiven Schutzpause"
       }
     }
   },
