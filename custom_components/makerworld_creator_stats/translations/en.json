@@ -423,6 +423,18 @@
             "name": "Boost update error"
           }
         }
+      },
+      "last_points_success": {
+        "name": "Last successful points update"
+      },
+      "last_boosts_success": {
+        "name": "Last successful boost update"
+      },
+      "pause_endpoint": {
+        "name": "Endpoint that triggered the protection pause"
+      },
+      "pause_reason": {
+        "name": "Active protection-pause reason"
       }
     }
   },
