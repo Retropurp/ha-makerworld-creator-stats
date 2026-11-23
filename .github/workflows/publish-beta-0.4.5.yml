@@ -1,0 +1,98 @@
+name: Publish MakerWorld beta v0.4.5-beta.1
+
+on:
+  push:
+    branches:
+      - beta/0.4.5-api-guardrails
+    paths:
+      - ".github/workflows/publish-beta-0.4.5.yml"
+      - "RELEASE_NOTES_0.4.5-beta.1.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: makerworld-beta-0.4.5
+  cancel-in-progress: false
+
+jobs:
+  offline:
+    name: Beta / Offline regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m compileall -q custom_components/makerworld_creator_stats
+      - run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+  hassfest:
+    name: Beta / Hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: home-assistant/actions/hassfest@f4ca6f671bd429efb108c0f2fa0ae8af0215986c
+
+  hacs:
+    name: Beta / HACS and Marketplace validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@d556e736723344f83838d08488c983a15381059a
+        with:
+          category: integration
+          comment: "false"
+
+  publish:
+    name: Publish verified beta prerelease only
+    needs: [offline, hassfest, hacs]
+    if: github.repository == 'Retropurp/ha-makerworld-creator-stats' && github.ref == 'refs/heads/beta/0.4.5-api-guardrails'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate beta manifest, identity, and notes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("custom_components/makerworld_creator_stats")
+          manifest = json.loads((root / "manifest.json").read_text())
+          api = (root / "api.py").read_text()
+          const = (root / "const.py").read_text()
+          policy = (root / "refresh_policy.py").read_text()
+          assert manifest["version"] == "0.4.5-beta.1"
+          assert 'CLIENT_NAME = "ha-makerworld-creator-stats"' in const
+          assert 'USER_AGENT = f"{CLIENT_NAME}/v{CLIENT_VERSION}"' in const
+          assert '"User-Agent": USER_AGENT' in api
+          assert '"X-BBL-Client-Type": "homeautomation"' in api
+          assert "OrcaSlicer" not in api
+          assert "bambu_network_agent" not in api
+          assert "PROFILE_SECONDS = 60 * 60" in policy
+          assert "EXTRA_SECONDS = 6 * 60 * 60" in policy
+          assert Path("RELEASE_NOTES_0.4.5-beta.1.md").is_file()
+          PY
+      - name: Publish beta release without changing stable latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="v0.4.5-beta.1"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag already exists, never overwrite an existing beta."
+            exit 0
+          fi
+          gh release create "$tag" \
+            --target "$GITHUB_SHA" \
+            --title "MakerWorld Creator Stats $tag (Beta)" \
+            --notes-file RELEASE_NOTES_0.4.5-beta.1.md \
+            --prerelease \
+            --latest=false
