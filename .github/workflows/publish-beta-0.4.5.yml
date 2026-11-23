@@ -3,7 +3,7 @@ name: Publish MakerWorld beta v0.4.5-beta.1
 on:
   push:
     branches:
-      - beta/0.4.5-api-guardrails
+      - beta/0.4.5-diagnostics
     paths:
       - ".github/workflows/publish-beta-0.4.5.yml"
       - "RELEASE_NOTES_0.4.5-beta.1.md"
@@ -51,7 +51,7 @@ jobs:
   publish:
     name: Publish verified beta prerelease only
     needs: [offline, hassfest, hacs]
-    if: github.repository == 'Retropurp/ha-makerworld-creator-stats' && github.ref == 'refs/heads/beta/0.4.5-api-guardrails'
+    if: github.repository == 'Retropurp/ha-makerworld-creator-stats' && github.ref == 'refs/heads/beta/0.4.5-diagnostics'
     runs-on: ubuntu-latest
     permissions:
       contents: write
