@@ -1,3 +1,9 @@
+## Beta 0.4.4 – API-Schutzmaßnahmen (noch nicht veröffentlicht)
+
+Der Profilabruf erfolgt künftig alle **60–61 Minuten** statt alle 30–31 Minuten. Optionale private Punkte- und Boost-Details werden nur alle **6 Stunden** geladen, sofern diese Funktion aktiviert ist. Bei neuen Konten ist sie zunächst **deaktiviert**, bestehende Installationen behalten ihre bisherige Einstellung. Punktestand, erhaltene Boosts und verfügbare Boost-Tokens stammen weiterhin direkt aus dem Profil. Bei eindeutigem HTTP 401 wird der betroffene private Endpunkt bis zur Anmeldung mit einem **neuen Token** gesperrt – auch nach einem Home-Assistant-Neustart. HTTP 403/429 und Cloudflare-Probleme führen weiterhin zu Schutzpausen. Der Transaktionshistorien-Import bleibt deaktiviert.
+
+Dies ist eine unveröffentlichte Testversion; der stabile Stand ist weiterhin 0.4.3.
+
 # MakerWorld Creator Stats
 
 [English](README.md)

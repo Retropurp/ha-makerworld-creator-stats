@@ -36,9 +36,10 @@
     "step": {
       "init": {
         "title": "Select sensor groups",
-        "description": "Gift card sensors estimate Bambu store credit. USD cash reward sensors use exclusive points and a USD 100 minimum. Rolling income sensors are unavailable in this beta. Home Assistant removes deselected groups from the entity registry. Update dashboards and automations that use those entities. Account statistics remain available.",
+        "description": "Gift card sensors estimate Bambu store credit. USD cash reward sensors use exclusive points and a USD 100 minimum. Rolling income sensors are unavailable in this beta. Home Assistant removes deselected groups from the entity registry. Update dashboards and automations that use those entities. Account statistics remain available. Private detail endpoints are optional; profile-based balances and received boosts work without them. Existing installations remain enabled unless switched off.",
         "data": {
-          "sensor_view": "Calculated sensor groups"
+          "sensor_view": "Calculated sensor groups",
+          "private_stats_enabled": "Fetch private points and boost details (every 6 hours; off for new accounts)"
         }
       },
       "shop": {
