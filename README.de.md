@@ -1,8 +1,8 @@
-## Beta 0.4.4 – API-Schutzmaßnahmen (noch nicht veröffentlicht)
+## Stabile Version 0.4.4 – vorsichtige API-Abfragen
 
-Der Profilabruf erfolgt künftig alle **60–61 Minuten** statt alle 30–31 Minuten. Optionale private Punkte- und Boost-Details werden nur alle **6 Stunden** geladen, sofern diese Funktion aktiviert ist. Bei neuen Konten ist sie zunächst **deaktiviert**, bestehende Installationen behalten ihre bisherige Einstellung. Punktestand, erhaltene Boosts und verfügbare Boost-Tokens stammen weiterhin direkt aus dem Profil. Bei eindeutigem HTTP 401 wird der betroffene private Endpunkt bis zur Anmeldung mit einem **neuen Token** gesperrt – auch nach einem Home-Assistant-Neustart. HTTP 403/429 und Cloudflare-Probleme führen weiterhin zu Schutzpausen. Der Transaktionshistorien-Import bleibt deaktiviert.
+Version 0.4.4 übernimmt die zuvor getestete Beta. Das Creator-Profil wird alle **60–61 Minuten** aktualisiert. Optionale private Punkte- und Boost-Details werden nur alle **6 Stunden** geladen, pro Profilzyklus höchstens ein zusätzlicher Endpunkt. Bei neuen Installationen sind private Detailabfragen zunächst **deaktiviert**; bestehende Installationen behalten ihre gespeicherte Einstellung. Punktestand, erhaltene Boosts und verfügbare Boost-Tokens stammen weiterhin direkt aus dem Profil. Bei eindeutigem HTTP 401 wird der betroffene private Endpunkt für das abgewiesene Token gesperrt – auch über Neustarts hinweg – bis eine erneute Anmeldung ein neues Token liefert. HTTP 403/429 und Cloudflare-Probleme führen weiterhin zu Schutzpausen. Der Transaktionshistorien-Import bleibt deaktiviert.
 
-Dies ist eine unveröffentlichte Testversion; der stabile Stand ist weiterhin 0.4.3.
+Siehe [Release Notes 0.4.4](RELEASE_NOTES_0.4.4.md).
 
 # MakerWorld Creator Stats
 
@@ -10,11 +10,11 @@ Dies ist eine unveröffentlichte Testversion; der stabile Stand ist weiterhin 0.
 
 MakerWorld Creator Stats ist eine eigenständige Home-Assistant-Integration für Creator-Statistiken, Punkte, Boosts und geschätzte Prämienwerte.
 
-## Stabile Version 0.4.3
+## Vorherige stabile Version 0.4.3
 
 Version 0.4.3 verwendet die eigene Client-Kennung `ha-makerworld-creator-stats/v0.4.3` statt der bisherigen OrcaSlicer-Kennung. Sie schützt vor wiederholten Anfragen bei Startfehlern und Neuladen, verwendet vorsichtige Aktualisierungsintervalle und bietet deutsche sowie englische Oberflächentexte. Das violette Diagramm-Icon ist ein eigenes Projektmotiv, kein offizielles Bambu-Lab-Logo.
 
-**Änderung gegenüber 0.4.2:** Der Import vieler einzelner Punktetransaktionen bleibt deaktiviert. Die bisherigen 7-, 14- und 30-Tage-Einnahmesensoren behalten ihre IDs, liefern aber vorerst keinen Wert. Weitere Informationen: [Release Notes](RELEASE_NOTES_0.4.3.md).
+**Änderung gegenüber 0.4.2:** Der Import vieler einzelner Punktetransaktionen bleibt deaktiviert. Die bisherigen 7-, 14- und 30-Tage-Einnahmesensoren behalten ihre IDs, liefern aber vorerst keinen Wert. Weitere Informationen: [Release Notes](RELEASE_NOTES_0.4.4.md).
 
 Die 7-, 14- und 30-Tage-Einnahmesensoren bleiben nicht verfügbar. Ihre eindeutigen IDs bleiben erhalten. Die Diagnose zeigt die nächste Profil-, Punkte- und Boost-Aktualisierung, die letzte erfolgreiche Profilabfrage und den API-Verbindungsstatus.
 
@@ -50,7 +50,7 @@ Eine erkannte Schutzprüfung wird dadurch nicht aufgehoben. Es gibt keine bestä
 
 ## Installation über HACS
 
-In HACS unter **⋮ → Benutzerdefinierte Repositories** die Adresse `https://github.com/Retropurp/ha-makerworld-creator-stats` als Typ **Integration** hinzufügen. **MakerWorld Creator Stats** herunterladen, Home Assistant neu starten und unter **Einstellungen → Geräte & Dienste** hinzufügen. Nach Veröffentlichung des stabilen GitHub-Releases `v0.4.3` in der Versionsauswahl die stabile Version installieren; Vorabversionen dafür nicht einschließen. In Home Assistant mit Marketplace-Unterstützung führt der [Link zum benutzerdefinierten Repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration) zur Integration.
+In HACS unter **⋮ → Benutzerdefinierte Repositories** die Adresse `https://github.com/Retropurp/ha-makerworld-creator-stats` als Typ **Integration** hinzufügen. **MakerWorld Creator Stats** herunterladen, Home Assistant neu starten und unter **Einstellungen → Geräte & Dienste** hinzufügen. Nach Veröffentlichung des stabilen GitHub-Releases `v0.4.4` in der Versionsauswahl die stabile Version installieren; Vorabversionen dafür nicht einschließen. In Home Assistant mit Marketplace-Unterstützung führt der [Link zum benutzerdefinierten Repository](https://my.home-assistant.io/redirect/hacs_repository/?owner=Retropurp&repository=ha-makerworld-creator-stats&category=integration) zur Integration.
 
 ## Manuelle Installation
 
@@ -99,7 +99,7 @@ Die Anwendung selbst schreibt keine Anmeldeinformationen, API-Antworten oder Tok
 
 Automatisierte Prüfungen verwenden künstliche API-Antworten für Datenverarbeitung, HTTP-Verhalten und Fehlerfälle. Zusätzlich wurden Anmeldung, Kontostatistiken, Punkte-Gegenwerte, Transaktionsimport und Sensorgruppenauswahl in der eigenen Home-Assistant-Installation erfolgreich erprobt. Das ist ein Praxistest mit einem Konto, keine umfassende Bestätigung für andere Konten, Regionen oder alle Fehlerfälle.
 
-Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen. Die Installation und das Upgrade auf 0.4.3 sollten vor breiter Verteilung mit bestehenden Home-Assistant-Konfigurationen geprüft werden. Siehe [Release Notes](RELEASE_NOTES_0.4.3.md) und den [historischen Beta-Testplan](BETA.md).
+Im weiteren Betrieb traten Zugriffsprobleme auf. Die Fehlererkennung und Schutzpausen ab Version 0.4.1 beziehungsweise 0.4.2 begrenzen wiederholte Anfragen, heben aber keine serverseitige Sperre auf. Der dauerhafte Betrieb und ein offiziell abgestimmter API-Zugang sind weiterhin offen. Die Installation und das Upgrade auf 0.4.3 sollten vor breiter Verteilung mit bestehenden Home-Assistant-Konfigurationen geprüft werden. Siehe [Release Notes](RELEASE_NOTES_0.4.4.md) und den [historischen Beta-Testplan](BETA.md).
 
 ## Quellen
 
