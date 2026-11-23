@@ -27,6 +27,10 @@ DIAGNOSTIC_SENSORS = (
     ("next_points_at", "mdi:clock-outline"),
     ("next_boosts_at", "mdi:clock-outline"),
     ("last_profile_success", "mdi:check-circle-outline"),
+    ("last_points_success", "mdi:check-circle-outline"),
+    ("last_boosts_success", "mdi:check-circle-outline"),
+    ("pause_endpoint", "mdi:api"),
+    ("pause_reason", "mdi:shield-alert-outline"),
     ("connection_status", "mdi:cloud-check-outline"),
 )
 
@@ -142,9 +146,16 @@ class MakerWorldDiagnosticSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._key = key
         is_status = key == "connection_status"
+        is_timestamp = key in (
+            "next_profile_update", "next_points_at", "next_boosts_at",
+            "last_profile_success", "last_points_success", "last_boosts_success",
+        )
         self.entity_description = SensorEntityDescription(
             key=key, translation_key=key, icon=icon,
-            device_class=SensorDeviceClass.ENUM if is_status else SensorDeviceClass.TIMESTAMP,
+            device_class=(
+                SensorDeviceClass.ENUM if is_status
+                else SensorDeviceClass.TIMESTAMP if is_timestamp else None
+            ),
             options=list(CONNECTION_STATES) if is_status else None,
         )
         self._attr_unique_id = f"{coordinator.account_id}_{key}"
@@ -162,8 +173,17 @@ class MakerWorldDiagnosticSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        value = getattr(self.coordinator, self._key, None)
-        if self._key == "connection_status":
+        if self._key == "last_points_success":
+            value = self.coordinator._extra_updated["points"]
+        elif self._key == "last_boosts_success":
+            value = self.coordinator._extra_updated["boosts"]
+        elif self._key == "pause_endpoint":
+            value = self.coordinator.pause["endpoint"] if self.coordinator.pause["state"].remaining(time.time()) else None
+        elif self._key == "pause_reason":
+            value = self.coordinator.pause["state"].reason if self.coordinator.pause["state"].remaining(time.time()) else None
+        else:
+            value = getattr(self.coordinator, self._key, None)
+        if self._key == "connection_status" or self._key in ("pause_endpoint", "pause_reason"):
             return value
         if isinstance(value, (int, float)) and value > 0:
             return datetime.fromtimestamp(value, timezone.utc)
