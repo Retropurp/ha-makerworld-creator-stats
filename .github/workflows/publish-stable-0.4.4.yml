@@ -1,0 +1,87 @@
+name: Publish stable v0.4.4
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-stable-0.4.4.yml"
+      - "custom_components/makerworld_creator_stats/manifest.json"
+      - "RELEASE_NOTES_0.4.4.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: makerworld-stable-0.4.4
+  cancel-in-progress: false
+
+jobs:
+  offline:
+    name: Release / Offline regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile Python integration
+        run: python -m compileall -q custom_components/makerworld_creator_stats
+      - name: Run offline tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+  hassfest:
+    name: Release / Home Assistant Hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: home-assistant/actions/hassfest@f4ca6f671bd429efb108c0f2fa0ae8af0215986c
+
+  hacs:
+    name: Release / HACS and Marketplace validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@d556e736723344f83838d08488c983a15381059a
+        with:
+          category: integration
+          comment: "false"
+
+  publish:
+    name: Publish stable v0.4.4 after all checks pass
+    needs: [offline, hassfest, hacs]
+    if: github.repository == 'Retropurp/ha-makerworld-creator-stats' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify stable version and release notes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path("custom_components/makerworld_creator_stats/manifest.json").read_text())
+          assert manifest["version"] == "0.4.4", f"Unexpected version: {manifest.get('version')}"
+          assert Path("RELEASE_NOTES_0.4.4.md").is_file(), "Missing stable release notes"
+          PY
+      - name: Publish GitHub stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="v0.4.4"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag already exists; refusing to overwrite it."
+            exit 1
+          fi
+          gh release create "$tag" \
+            --target "$GITHUB_SHA" \
+            --title "MakerWorld Creator Stats v0.4.4" \
+            --notes-file RELEASE_NOTES_0.4.4.md \
+            --latest
