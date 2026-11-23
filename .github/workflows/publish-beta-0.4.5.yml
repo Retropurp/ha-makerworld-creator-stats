@@ -51,7 +51,7 @@ jobs:
   publish:
     name: Publish verified beta prerelease only
     needs: [offline, hassfest, hacs]
-    if: github.repository == 'Retropurp/ha-makerworld-creator-stats' && github.ref == 'refs/heads/beta/0.4.5-diagnostics'
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'Retropurp/ha-makerworld-creator-stats' && github.ref == 'refs/heads/beta/0.4.5-diagnostics'
     runs-on: ubuntu-latest
     permissions:
       contents: write
